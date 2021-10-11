@@ -9,7 +9,7 @@ build binary
 ```go build http.go```
 
 run binary with the api keys as arguments
-```./http --api-id="{API Key}" --api-secret="{API Secret}"
+```./http --api-id="{API Key}" --api-secret="{API Secret}"```
 
 web server runs on port 8001
 
