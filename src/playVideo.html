@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Theta blockchain-based hybrid CDN</title>
+   
+   <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
+   <script type="application/javascript" src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
+   
+
+   <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
+<!--
+   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
+-->
+   
+</head>
+
+<body>
+   <section id="header">
+      <div id="logo">
+         <a href="javascript;;"></a>
+      </div>
+      <h2 id="appTitle"></h2>
+      <div id="controls"></div>
+   </section>
+   <section id="content">
+      <div id="player_container" class="">
+         <video id="player" controls autoplay muted></video>
+      </div>
+      <div id="control-panel" style="display: flex; justify-content:space-between">
+         <div id="control-panel__left">
+            <div id="user">
+               <div class="sign_in_view hidden">
+                  <a href="javascript:;" class="sign_in">Sign in</a>
+               </div>
+               <div class="select_account_view hidden">
+                  <label for='address'>Select account:</label>
+                  <select name="address" id="address">
+                     <option value=''></option>
+                  </select>
+               </div>
+               <table class="detail_view hidden">
+                  <tr>
+                     <td class="label">Name:</td>
+                     <td class="name right"> </td>
+                  </tr>
+                  <tr>
+                     <td class="label">Address:</td>
+                     <td class="address right small"></td>
+                  </tr>
+                  <tr>
+                     <td class="label">Balance:</td>
+                     <td class="balance right small"></td>
+                  </tr>
+                  <tr>
+                     <td></td>
+                     <td>
+                        <!-- <a href="javascript:;" class="switch">Switch Account</a> -->
+                     </td>
+                  </tr>
+               </table>
+            </div>
+         </div>
+         <div id="p2p-efficiency-container" style="align-self: flex-end; display: none;">
+            <div id="p2p-control">
+               <span>
+               <span id="num_peers">0</span> Peer(s)</span>
+            </div>
+            <div style="display: flex">
+               <div>Inbound peer delivery efficiency&nbsp;&nbsp;&nbsp;:&nbsp;</div>
+               <div id="p2p-efficiency-in">0.00%</div>
+            </div>
+            <div style="display: flex">
+               <div>Outbound peer delivery efficiency:&nbsp;</div>
+               <div id="p2p-efficiency-out">0.00%</div>
+            </div>
+         </div>
+      </div>
+      <div class="display-overlay" id="display-overlay">
+         <div class="btn tx" id="switch-text">CDN + P2P Traffic</div>
+         <label class="p2pswitch">
+            <input type="checkbox" checked></input>
+            <span class="slider" onclick="toggleUseCDN()"></span>
+         </label>
+      </div>
+      <!-- Optional - For Theta Web Widget -->
+      <div id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
+   </section>
+</body>
+   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
+   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta-hls-plugin.umd.js"></script>
+   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/videojs-theta-plugin.min.js"></script>
+
+   <!-- Optional - Include Theta Web Widget -->
+   <script type="application/javascript" src="https://theta-web-widgets.thetatoken.org/js/ThetaWebWidgets.js"></script>
+<script>
+
+   const PEER_SERVER_HOST = "prod-theta-peerjs.thetatoken.org";
+   //const PEER_SERVER_HOST = "localhost";
+   const PEER_SERVER_PORT = 8700;
+   //const PEER_SERVER_PORT = 9000;
+   const TRACKER_SERVER_HOST = "prod-testnet-grouping.thetatoken.org";
+   //const TRACKER_SERVER_HOST = "localhost";
+   const TRACKER_SERVER_PORT = 8700;
+   //const TRACKER_SERVER_PORT = 9000;
+
+   //const PLATFORM_THETA_WALLET_SERVICE_URL = "http://localhost:3000";
+
+   // TODO Fill these in with your data
+   const VIDEO_ID = 'vid123';
+   //const VIDEO_URL = "https://video-dev.github.io/streams/x36xhzz/x36xhzz.m3u8";
+   const VIDEO_URL = "{{.}}"
+
+   //const ThetaWalletConnect = require("@thetalabs/theta-wallet-connect");
+   //const accounts = await ThetaWalletConnect.requestAccounts();
+   // --------- Guest User Helpers ------------
+
+   function toggleUseCDN() {
+      let d = document.getElementById("switch-text");
+      Theta.isPeeringEnabled = !Theta.isPeeringEnabled;
+      if (!Theta.isPeeringEnabled) {
+         d.style.color = '#eb475b';
+         d.innerText = "CDN TRAFFIC ONLY";
+         return
+      }
+      d.style.color = '#25C4E4';
+      d.innerText = "CDN + P2P TRAFFIC";
+   }
+
+   function generateGuestUserIdIfNeeded() {
+      let guestUserId = localStorage.getItem("THETA_EXAMPLE_GUEST_USER_ID");
+      if (guestUserId === null) {
+         var guestID = "" + (new Date().getTime());
+         localStorage.setItem("THETA_EXAMPLE_GUEST_USER_ID", guestID);
+      }
+   }
+
+   function getGuestUserId() {
+      return localStorage.getItem("THETA_EXAMPLE_GUEST_USER_ID")
+   }
+
+   async function fetchVaultAuthToken() {
+      //TODO This is a sample endpoint to auth your user; however, you will implement your own endpoint to generate a signed JWT
+      // in order to authenticate your own users' transaction (please contact us to get a testnet API Key / Secret Key & Docs)
+      let headers = {
+         'Accept': 'application/json',
+         'Content-Type': 'application/json',
+         //FIXME: these are just for this example, you should add your own auth headers here when you integrate your own token endpoint :)
+         'X-Auth-User': "usr5gv7cfqi4ezyf4m8",
+         'X-Auth-Token': "wrezhw0itv6j296mnybyb3nwnebwg4ws"
+      };
+
+      const options = {
+         method: 'POST',
+         headers: headers
+      };
+
+      let url = "https://api.sliver.tv/v1/theta/vault/token";
+      let response = await fetch(url, options);
+      let responseData = await response.json();
+      let body = responseData["body"];
+      let accessToken = body["access_token"];
+
+      return accessToken;
+   }
+
+   // --------- Platform Theta Wallet ------------
+
+   class PlatformThetaWalletWebSocketProvider extends Theta.WalletWebSocketProvider {
+      //Override getAuth to fetch our own short TTL access token first
+      async getAuth() {
+         let result = await fetchVaultAuthToken();
+         let accessToken = result;
+
+         if (accessToken === null) {
+            //No access token, try a non-authed call
+            return {};
+         }
+
+         return {
+            //WebSocketProvider uses args instead of headers
+            args: {
+                  'access_token': accessToken
+            }
+         };
+      }
+   }
+
+// --------- Launch the App --------- 
+
+   function startVideo(theta) {
+      class ClosuredThetaLoader extends Theta.HlsJsFragmentLoader {
+         load(...args) {
+            // Inject context from closure.
+            this.thetaCtx = theta;
+            super.load(...args);
+         }
+      }
+
+      let hlsOpts = (theta ? { fLoader: ClosuredThetaLoader } : {});
+      let videoURL = VIDEO_URL;
+      let videoElement = document.getElementById('player');
+
+      if (Hls.isSupported()) {
+         let hls = new Hls(hlsOpts);
+         hls.attachMedia(videoElement);
+
+         hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+            // load the stream
+            hls.loadSource(videoURL);
+         });
+
+         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            // Start playback
+            videoElement.play();
+         });
+      }
+      else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+         // hls.js is not supported on platforms that do not have Media Source
+         // Extensions (MSE) enabled. When the browser has built-in HLS support
+         // (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL)
+         // directly to the video element throught the `src` property. This is using the
+         // built-in support of the plain video element, without using hls.js.
+         // Note: it would be more normal to wait on the 'canplay' event below however on
+         // Safari (where you are most likely to find built-in HLS support) the video.src
+         // URL must be on the user-driven. White-list before a 'canplay' event will be emitted;
+         // the last video event that can be reliably listened-for when the URL is not on
+         // the white-list is 'loadedmetadata'.
+
+         // We are not using HLS.js, so Theta will not be able to use P2P!
+         videoElement.src = videoURL;
+         videoElement.addEventListener('loadedmetadata', function () {
+         videoElement.play();
+         });
+      }
+      else {
+      // No HLS is supported...fallback...
+      }
+   }
+
+   function startPlayer() {
+      let userId = getGuestUserId();
+
+      let theta = new Theta({
+         //TODO adjust params as needed depending on your HLS settings
+         
+         fragmentSize: 5000,
+         failoverFactor: 0.7,
+         fragmentTimeout: 3000,
+         probeTimeout: 300,
+         statsReportInterval: 90000,
+         peerReqInterval: 120000,
+         
+         videoId: VIDEO_ID,
+         userId: userId,
+
+         peerServer: {
+            host: PEER_SERVER_HOST,
+            port: PEER_SERVER_PORT,
+            secure: true
+         },
+         trackerServer: {
+            host: TRACKER_SERVER_HOST,
+            port: TRACKER_SERVER_PORT,
+            secure: true,
+            path: ""
+         },
+
+         debug: false
+      });
+
+      // Event handlers
+      theta.addEventListener(Theta.Events.PEERS_CHANGED, function (data) {
+      // Connected peers changed
+      // Data:
+      // totalPeers : Integer
+         //console.log("new peer connected", data)
+      });
+      theta.addEventListener(Theta.Events.TRAFFIC, function (data) {
+      // Bandwidth was used
+      // Data:
+      // type : String ('cdn', 'p2p_inbound', 'p2p_outbound')
+      // stats : Object
+      // stats.size : Integer - Total bytes
+         //console.log("bandwidth being used", data)
+      });
+      theta.addEventListener(Theta.Events.PAYMENT_RECEIVED, function (data) {
+      // Payment received
+      // Data:
+      // payment : Object - info about the payment
+      // payment.amount : Integer - Payment amount in GammaWei
+         //console.log("payment received", data)
+      });
+      theta.addEventListener(Theta.Events.PAYMENT_SENT, function (data) {
+      // Payment sent
+      // Data:
+      // payment : Object - info about the payment
+      // payment.amount : Integer - Payment amount in GammaWei
+         //console.log("payment sent", data)
+      });
+      theta.addEventListener(Theta.Events.ACCOUNT_UPDATED, function (data) {
+      // Account/waller updated
+      // Data:
+      // account : Object - info about the account/wallet
+
+         //console.log("account updated", data)
+      });
+      theta.start();
+
+      //If you are using the Theta widget, connect the widget so it can listen to events
+      theta.connectWidget();
+
+      startVideo(theta);
+   }
+
+   function startApp() {
+      generateGuestUserIdIfNeeded();
+      startPlayer();
+
+      //Optional - Setup Theta Web Widgets
+      var widget = new ThetaWebWidgets.OverviewWithTrafficChartWidget();
+      widget.setTheme(ThetaWebWidgets.Themes.Light);
+      widget.setMainMessage("Welcome to the Sample Integration. Help us test blockchain video sharing and earn TFUEL.");
+      widget.render("SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER");
+   }
+   window.addEventListener("load", startApp)
+</script>
+
+</html>
