@@ -14,7 +14,7 @@ poc for theta network utilizing the thetavideoapi and the theta p2p js library
 - "net/url"
 - "strings"
 - "time"
-## JavaScript/CSs
+## JavaScript/CSS
 - video.js v7.10.2 https://vjs.zencdn.net/7.10.2/video.min.js/https://vjs.zencdn.net/7.10.2/video-js.min.css
 - hls.js v0.12.4 https://cdn.jsdelivr.net/npm/hls.js@0.12.4
 - theta.js v0.0.0 https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js
