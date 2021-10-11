@@ -11,6 +11,8 @@ build binary
 run binary with the api keys as arguments
 ```./http --api-id="{API Key}" --api-secret="{API Secret}"
 
+web server runs on port 8001
+
 # Dependencies
 ## Golang
 - "bytes"
