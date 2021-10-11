@@ -1,7 +1,17 @@
 # theta-poc
 poc for theta network utilizing the thetavideoapi and the theta p2p js library
 
-# Libraries
+# Usage
+
+> Create an app on thetavideoapi.com to generate the api keys
+
+build binary
+```go build http.go```
+
+run binary with the api keys as arguments
+```./http --api-id="{API Key}" --api-secret="{API Secret}"
+
+# Dependencies
 ## Golang
 - "bytes"
 - "encoding/json"
