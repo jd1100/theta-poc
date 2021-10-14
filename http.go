@@ -71,11 +71,8 @@ func getPresignedUploadUrl() string {
 	presignedUrlresponse := PreSignedURLResponse{}
 	req.Header.Add("x-tva-sa-id", api_key)
 	req.Header.Add("x-tva-sa-secret", api_secret)
-
-
 	res, _ := client.Do(req)
 	defer res.Body.Close()
-
 	//body, err := ioutil.ReadAll(res.Body)
 	err = json.NewDecoder(res.Body).Decode(&presignedUrlresponse)
 	//err = json.Unmarshal(body, &presignedUrlresponse)
@@ -83,10 +80,7 @@ func getPresignedUploadUrl() string {
 		fmt.Println(err)
 	}
 	fmt.Println(presignedUrlresponse)
-
 	return presignedUrlresponse.Uploads.PresignedURL
-
-
 }
 */
 var apiID *string
@@ -307,13 +301,10 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("grabbing requested video " + je + "from cdn")
 			client = &http.Client{}
 			req, _ = http.NewRequest("GET", "https://api.thetavideoapi.com/video/"+videoId, nil)
-
 			req.Header.Add("x-tva-sa-id", api_key)
 			req.Header.Add("x-tva-sa-secret", api_secret)
-
 			res, _ = client.Do(req)
 			defer res.Body.Close()
-
 			body, err = ioutil.ReadAll(res.Body)
 			err = json.Unmarshal(body, &transcodeVideoResponse)
 		*/
