@@ -28,10 +28,11 @@
     "@tsconfig/svelte": "^2.0.0"
   },
   "dependencies": {
-    "sirv-cli": "^1.0.0",
-    "svelte-filepond": "^0.2.0",
-    "filepond": "^4.20.1",
+    "@okrad/svelte-progressbar": "^1.11.2",
+    "filepond": "^4.30.3",
     "filepond-plugin-image-exif-orientation": "^1.0.9",
-    "filepond-plugin-image-preview": "^4.6.4"
+    "filepond-plugin-image-preview": "^4.6.4",
+    "sirv-cli": "^1.0.0",
+    "svelte-filepond": "^0.2.0"
   }
 }
