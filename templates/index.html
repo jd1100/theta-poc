@@ -1,0 +1,18 @@
+{{define "body"}}
+<my-app name="Joe"></my-app>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Where To?</title>
+  </head>
+  <body>
+    <form enctype="multipart/form-data" action="/upload" method="post">
+      <input type="file" id="myFile" name="video_file">
+      <input type="submit">
+      
+    </form>
+    <progress value="{{.}}" max="100"> </progress> 
+  </body>
+</html>
+{{end}}
