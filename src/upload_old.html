@@ -1,15 +1,105 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Where To?</title>
-  </head>
-  <body>
-    <form enctype="multipart/form-data" action="/upload" method="post">
-      <input type="file" id="myFile" name="videoUpload">
-      <input type="submit">
-      
+{{define "upload.html"}}
+<body>
+  <div>
+    <iframe name="frame" style="display:none"></iframe>
+    <form id="uploadForm" enctype="multipart/form-data" action="/upload" method="post" target="frame">
+      <input id="file" type="file" name="video_file">
+      <input id="submitButton" type="submit">
     </form>
-    <progress value="{{.}}" max="100"> </progress> 
-  </body>
-</html>
+    <progress max="100" id="progressBar"></progress> 
+  </div>
+</body>
+
+<script>
+  console.log("we're doing it")
+  /*
+  var testButton = document.getElementById("testButton")
+  testButton.addEventListener("click", event => {
+    getUploadStatus()
+  })
+  */
+  var data = 0
+  var num = 0
+  var timeoutID
+  var progressBar = document.getElementById("progressBar")
+  var file = document.getElementById("file")
+  var uploadForm = document.getElementById("uploadForm")
+  uploadForm.addEventListener("submit", event => {
+    if (file.files.length == 0) {
+      alert("no file selected")
+      console.log("no file selected")
+      return
+    }
+    getUploadStatus()
+  })
+
+  function getUploadStatus() {
+    fetch("http://localhost:8001/getUploadStatus")
+      .then(response => response.json())
+      .then(data => {
+        if (num === 1 ) {
+          console.log(data)
+          progressBar.setAttribute("value", data)
+          if (data === 100) {
+            alert("video has been uploaded and is ready to play!")
+            console.log("video has been uploaded and is ready to play!")
+            clearTimeout(timeoutID)
+            return
+          } else {
+            timeoutID = setTimeout(getUploadStatus, 3000)
+          }
+        } else {
+          num = 1
+          timeoutID = setTimeout(getUploadStatus, 3000)
+        }
+      })
+  }
+  /*
+  function getUploadStatus() {
+    
+    console.log("building request")
+    // URL to contact using AJAX
+    var url = "http://localhost:8001/getUploadStatus";
+    console.log(url)
+
+    // GET requires we add the name=value pairs to the end of the URL.
+
+    // Create a new AJAX request object
+    var request = new XMLHttpRequest();
+
+    // Open a connection to the server
+    request.open('GET', url);
+    //request.setRequestHeader("x-tva-sa-id", "{{getApiKey}}")
+    //request.setRequestHeader("x-tva-sa-secret", "{{getApiSecret}}")
+
+    // Run our handleResponse function when the server responds
+    request.addEventListener('readystatechange', handleResponse);
+
+    // Actually send the request
+    request.send();
+
+    console.log("request made")
+  }
+
+  function handleResponse() {
+    // "this" refers to the object we called addEventListener on
+    var request = this;
+    /*
+    Exit this function unless the AJAX request is complete,
+    and the server has responded.
+    
+    console.log("waiting for response")
+    if (request.readyState != 4)
+        console.log("shit didnt work");
+    
+    // If there wasn't an error, run our showResponse function
+    if (request.status == 200) {
+    }
+    
+    var ajaxResponse = request.responseText;
+
+    console.log(ajaxResponse);
+  }
+  */
+</script>
+{{end}}

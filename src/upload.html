@@ -1,10 +1,12 @@
 <!doctype html>
 <html>
+
 <head>
    <meta charset="UTF-8" />
    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
 </head>
+
 <body>
    <div
       class="relative min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 bg-gray-500 bg-no-repeat bg-cover relative items-center"
@@ -13,41 +15,40 @@
       <div class="sm:max-w-lg w-full p-10 bg-white rounded-xl z-10">
          <div class="text-center">
             <h2 class="mt-5 text-3xl font-bold text-gray-900">
-               File Upload!
+               Upload Video
             </h2>
-            <p class="mt-2 text-sm text-gray-400">Lorem ipsum is placeholder text.</p>
+            <p class="mt-2 text-sm text-gray-400">Upload video to theta video api</p>
          </div>
-         <form class="mt-8 space-y-3" action="/upload" method="POST" enctype="multipart/form-data">
+         <iframe name="frame" style="display:none"></iframe>
+         <form id="uploadForm" class="mt-8 space-y-3" action="/upload" method="POST" enctype="multipart/form-data"
+            target="frame">
             <div class="grid grid-cols-1 space-y-2">
                <label class="text-sm font-bold text-gray-500 tracking-wide">Title</label>
                <input class="text-base p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"
-                  type="" placeholder="mail@gmail.com">
+                  type="">
             </div>
             <div class="grid grid-cols-1 space-y-2">
                <label class="text-sm font-bold text-gray-500 tracking-wide">Attach Document</label>
                <div class="flex items-center justify-center w-full">
                   <label class="flex flex-col rounded-lg border-4 border-dashed w-full h-60 p-10 group text-center">
                      <div class="h-full w-full text-center flex flex-col items-center justify-center items-center  ">
-                        <!---<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                       </svg>-->
-                        <div class="flex flex-auto max-h-48 w-2/5 mx-auto -mt-10">
-                           <img class="has-mask h-36 object-center"
-                              src="https://img.freepik.com/free-vector/image-upload-concept-landing-page_52683-27130.jpg?size=338&ext=jpg"
-                              alt="freepik image">
+                        <div id="thumbnail" class="flex flex-auto max-h-48 w-2/5 mx-auto -mt-10">
+
                         </div>
-                        <p class="pointer-none text-gray-500 "><span class="text-sm">Drag and drop</span> files here <br />
-                           or <a href="" id="" class="text-blue-600 hover:underline">select a file</a> from your computer
+                        <p class="pointer-none text-gray-500 "><span class="text-sm">Drag and drop</span> files here
+                           <br />
+                           or <a href="" id="" class="text-blue-600 hover:underline">select a file</a> from your
+                           computer
                         </p>
                      </div>
-                     <input type="file" name="video_file" class="hidden">
+                     <input type="file" id="file" name="video_file" class="hidden">
                   </label>
                </div>
             </div>
             <p class="text-sm text-gray-300">
-               <span>File type: doc,pdf,types of images</span>
+               <span>File type: mp4</span>
             </p>
-            <div>
+            <div id="buttonDiv">
                <button type="submit"
                   class="my-5 w-full flex justify-center bg-blue-500 text-gray-100 p-4  rounded-full tracking-wide
                   font-semibold  focus:outline-none focus:shadow-outline hover:bg-blue-600 shadow-lg cursor-pointer transition ease-in duration-300">
@@ -58,8 +59,134 @@
       </div>
    </div>
 </body>
+
 </html>
 
+<script>
+   console.log("we're doing it")
+   /*
+   var testButton = document.getElementById("testButton")
+   testButton.addEventListener("click", event => {
+     getUploadStatus()
+   })
+   */
+   var data = 0
+   var num = 0
+   var timeoutID
+   var newProgressBar = document.createElement("div")
+   var buttonDiv = document.getElementById("buttonDiv")
+   var file = document.getElementById("file")
+   var uploadForm = document.getElementById("uploadForm")
+   uploadForm.addEventListener("submit", event => {
+      if (file.files.length == 0) {
+         alert("no file selected")
+         console.log("no file selected")
+         return
+      }
+      removeButton()
+      addProgressBar()
+      var progressBarDiv = document.getElementById("progressBarDiv")
+      var progressBar = document.getElementById("progressBar")
+      getUploadStatus()
+   })
+
+   function removeButton() {
+      buttonDiv.parentNode.removeChild(buttonDiv)
+   }
+
+   function addProgressBar() {
+      newProgressBar.setAttribute("id", "progressBarDiv")
+      newProgressBar.setAttribute("class", "h-3 relative max-w-xl rounded-full overflow-hidden")
+      newProgressBar.innerHTML = `
+      <div class="w-full h-full bg-gray-200 absolute"></div>
+      <div id="progressBar" class="transition-all ease-out duration-1000 h-full bg-green-500 relative w-0"></div>`
+
+      uploadForm.appendChild(newProgressBar)
+
+   }
+
+   function getUploadStatus() {
+      fetch("http://localhost:8001/getUploadStatus")
+         .then(response => response.json())
+         .then(data => {
+            if (num === 1) {
+               console.log(data)
+               progressBar.setAttribute("value", data)
+               progressBar.style.width = data + "%"
+               if (data === 100) {
+                  alert("video has been uploaded and is ready to play!")
+                  console.log("video has been uploaded and is ready to play!")
+                  clearTimeout(timeoutID)
+                  window.location = "/videos"
+               } else {
+                  timeoutID = setTimeout(getUploadStatus, 3000)
+               }
+            } else {
+               num = 1
+               timeoutID = setTimeout(getUploadStatus, 3000)
+            }
+         })
+   }
+   document.getElementById('file').addEventListener('change', function (event) {
+      var thumbnail = document.getElementById("thumbnailImg")
+      if (thumbnail != null) {
+         thumbnail.remove()
+      }
+      var file = event.target.files[0];
+      var fileReader = new FileReader();
+      if (file.type.match('image')) {
+         fileReader.onload = function () {
+            var img = document.createElement('img');
+            img.src = fileReader.result;
+            document.getElementById('thumbnail').appendChild(img);
+            img.id = "thumbnailImg"
+            img.className = "has-mask h-36 object-center"
+         };
+         fileReader.readAsDataURL(file);
+      } else {
+         fileReader.onload = function () {
+            var blob = new Blob([fileReader.result], { type: file.type });
+            var url = URL.createObjectURL(blob);
+            var video = document.createElement('video');
+            var timeupdate = function () {
+               if (snapImage()) {
+                  video.removeEventListener('timeupdate', timeupdate);
+                  video.pause();
+               }
+            };
+            video.addEventListener('loadeddata', function () {
+               if (snapImage()) {
+                  video.removeEventListener('timeupdate', timeupdate);
+               }
+            });
+            var snapImage = function () {
+               var canvas = document.createElement('canvas');
+               canvas.width = video.videoWidth;
+               canvas.height = video.videoHeight;
+               canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+               var image = canvas.toDataURL();
+               var success = image.length > 100000;
+               if (success) {
+                  var img = document.createElement('img');
+                  img.src = image;
+                  img.id = "thumbnailImg"
+                  img.className = "has-mask h-36 object-center"
+                  document.getElementById("thumbnail").appendChild(img);
+                  URL.revokeObjectURL(url);
+               }
+               return success;
+            };
+            video.addEventListener('timeupdate', timeupdate);
+            video.preload = 'metadata';
+            video.src = url;
+            // Load video in Safari / IE11
+            video.muted = true;
+            video.playsInline = true;
+         };
+         fileReader.readAsArrayBuffer(file);
+      }
+   });
+</script>
 
 <style>
    .has-mask {
