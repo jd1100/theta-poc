@@ -26,7 +26,10 @@ web server runs on port 8001
 - "net/url"
 - "strings"
 - "time"
+- "github.com/alexedwards/scs"
+- "github.com/gorilla/mux"
 ## JavaScript/CSS
+- tailwindcss 
 - video.js v7.10.2 https://vjs.zencdn.net/7.10.2/video.min.js/https://vjs.zencdn.net/7.10.2/video-js.min.css
 - hls.js v0.12.4 https://cdn.jsdelivr.net/npm/hls.js@0.12.4
 - theta.js v0.0.0 https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js

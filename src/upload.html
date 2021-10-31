@@ -1,4 +1,4 @@
-<!doctype html>
+{{define "upload"}}
 <html>
 
 <head>
@@ -20,7 +20,7 @@
             <p class="mt-2 text-sm text-gray-400">Upload video to theta video api</p>
          </div>
          <iframe name="frame" style="display:none"></iframe>
-         <form id="uploadForm" class="mt-8 space-y-3" action="/upload" method="POST" enctype="multipart/form-data"
+         <form id="uploadForm" class="mt-8 space-y-3" action="#" enctype="multipart/form-data"
             target="frame">
             <div class="grid grid-cols-1 space-y-2">
                <label class="text-sm font-bold text-gray-500 tracking-wide">Title</label>
@@ -48,14 +48,14 @@
             <p class="text-sm text-gray-300">
                <span>File type: mp4</span>
             </p>
-            <div id="buttonDiv">
-               <button type="submit"
-                  class="my-5 w-full flex justify-center bg-blue-500 text-gray-100 p-4  rounded-full tracking-wide
-                  font-semibold  focus:outline-none focus:shadow-outline hover:bg-blue-600 shadow-lg cursor-pointer transition ease-in duration-300">
-                  Upload
-               </button>
-            </div>
          </form>
+         <div id="buttonDiv">
+            <button id="buttonElement" type="submit"
+               class="my-5 w-full flex justify-center bg-blue-500 text-gray-100 p-4  rounded-full tracking-wide
+               font-semibold  focus:outline-none focus:shadow-outline hover:bg-blue-600 shadow-lg cursor-pointer transition ease-in duration-300">
+               Upload
+            </button>
+         </div>
       </div>
    </div>
 </body>
@@ -70,26 +70,96 @@
      getUploadStatus()
    })
    */
+   var videoID = ""
    var data = 0
    var num = 0
    var timeoutID
+   var isComplete = false
    var newProgressBar = document.createElement("div")
+   var newButtonDiv = document.createElement("div")
+   var newLoadingSpinner = document.createElement("div")
    var buttonDiv = document.getElementById("buttonDiv")
-   var file = document.getElementById("file")
    var uploadForm = document.getElementById("uploadForm")
-   uploadForm.addEventListener("submit", event => {
-      if (file.files.length == 0) {
+   var file
+   var fileLength
+   var formData = new FormData()
+   var button = document.getElementById("buttonElement")
+   var content = [];
+   var boundary = '-----------------------------' + Math.floor(Math.random() * Math.pow(10, 8));
+   var reader = new FileReader();
+
+   //console.log(file)
+   // set file variables
+   document.getElementById("file").onchange = function(e) {
+      //e.preventDefault()
+      file = (e.target).files[0];
+      reader.readAsArrayBuffer(file);
+      fileLength = (e.target).files.length
+      console.log(file.name, fileLength)
+      console.log(file)
+
+      reader.onload = function(evt) {
+         //new Blob([fileAsArray], {type: "image/jpg"}
+         formData.append("video_file", file)
+         //formData.append("video_file", new Blob([evt.target.result], {type: "video"}))
+      }
+      //rest of your code...
+   }
+   
+   
+   async function uploadFormData() {
+      let response = await fetch("http://localhost:8001/upload", {
+         method: "POST",
+         //jsonData: content.join(''),
+         body: formData
+      })
+      //console.log(response.status)
+      //console.log(response.statusText)
+      let result = await response.text();
+      videoID = result
+      console.log(videoID)
+      return
+   }
+
+   button.addEventListener("click", event => {
+      //var file = document.getElementById("file").files[0]
+      //event.preventDefault()
+      console.log(fileLength)
+      if (fileLength == 0) {
          alert("no file selected")
          console.log("no file selected")
          return
       }
       removeButton()
+      //addLoadingSpinner()
       addProgressBar()
       var progressBarDiv = document.getElementById("progressBarDiv")
       var progressBar = document.getElementById("progressBar")
+      uploadFormData()
       getUploadStatus()
    })
+   
 
+   function addLoadingSpinner() {
+      newLoadingSpinner.setAttribute("id", "loadingSpinner")
+      newLoadingSpinner.setAttribute("class", "flex items-center justify-center")
+
+      newLoadingSpinner.innerHTML = `
+         <div class="w-16 h-16 border-b-2 border-gray-900 rounded-full animate-spin"></div>
+         `
+      uploadForm.appendChild(newLoadingSpinner)
+   }
+
+   function addButton() {
+      newButtonDiv.setAttribute("id", "buttonDiv")
+      newButtonDiv.innerHTML = `
+            <button id="buttonElement" type="submit"
+               class="my-5 w-full flex justify-center bg-blue-500 text-gray-100 p-4  rounded-full tracking-wide
+               font-semibold  focus:outline-none focus:shadow-outline hover:bg-blue-600 shadow-lg cursor-pointer transition ease-in duration-300">
+               Upload
+            </button>`
+      uploadForm.appendChild(newButtonDiv)
+   }
    function removeButton() {
       buttonDiv.parentNode.removeChild(buttonDiv)
    }
@@ -104,28 +174,45 @@
       uploadForm.appendChild(newProgressBar)
 
    }
-
+   function removeProgressBar() {
+      newProgressBar.parentNode.removeChild(newProgressBar)
+   }
    function getUploadStatus() {
-      fetch("http://localhost:8001/getUploadStatus")
-         .then(response => response.json())
+      fetch("http://localhost:8001/getUploadStatus/" + videoID)
+         .then(response => response.text())
          .then(data => {
-            if (num === 1) {
+            console.log(data)
+            /*
+            if (data == 0 || data == null) {
+               addLoadingSpinner()
+            } else {
+               uploadForm.parentNode.removeChild(newLoadingSpinner)
+               addProgressBar()
+               progressBar.setAttribute("value", data)
+               progressBar.style.width = data + "%"
+            }
+            */
+            progressBar.setAttribute("value", data)
+            progressBar.style.width = data + "%"
+            if (data == 100) {
                console.log(data)
                progressBar.setAttribute("value", data)
                progressBar.style.width = data + "%"
-               if (data === 100) {
-                  alert("video has been uploaded and is ready to play!")
-                  console.log("video has been uploaded and is ready to play!")
-                  clearTimeout(timeoutID)
-                  window.location = "/videos"
-               } else {
-                  timeoutID = setTimeout(getUploadStatus, 3000)
-               }
+               
+               //remove progress bar
+               removeProgressBar()
+               //add button back
+               addButton()
+               console.log("video has been uploaded and is ready to play!")
+               alert("video has been uploaded and is ready to play!")
+
+               clearTimeout(timeoutID)
+               window.location = "/videos"
             } else {
-               num = 1
-               timeoutID = setTimeout(getUploadStatus, 3000)
+               timeoutID = setTimeout(getUploadStatus, 1000)
             }
          })
+
    }
    document.getElementById('file').addEventListener('change', function (event) {
       var thumbnail = document.getElementById("thumbnailImg")
@@ -187,7 +274,9 @@
       }
    });
 </script>
+{{end}}
 
+{{template "upload"}}
 <style>
    .has-mask {
       position: absolute;
