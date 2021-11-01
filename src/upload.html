@@ -20,8 +20,7 @@
             <p class="mt-2 text-sm text-gray-400">Upload video to theta video api</p>
          </div>
          <iframe name="frame" style="display:none"></iframe>
-         <form id="uploadForm" class="mt-8 space-y-3" action="#" enctype="multipart/form-data"
-            target="frame">
+         <form id="uploadForm" class="mt-8 space-y-3" action="#" enctype="multipart/form-data" target="frame">
             <div class="grid grid-cols-1 space-y-2">
                <label class="text-sm font-bold text-gray-500 tracking-wide">Title</label>
                <input class="text-base p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"
@@ -75,9 +74,9 @@
    var num = 0
    var timeoutID
    var isComplete = false
-   var newProgressBar = document.createElement("div")
+   var newProgressBarDiv = document.createElement("div")
    var newButtonDiv = document.createElement("div")
-   var newLoadingSpinner = document.createElement("div")
+   var newLoadingSpinnerDiv = document.createElement("div")
    var buttonDiv = document.getElementById("buttonDiv")
    var uploadForm = document.getElementById("uploadForm")
    var file
@@ -87,9 +86,11 @@
    var content = [];
    var boundary = '-----------------------------' + Math.floor(Math.random() * Math.pow(10, 8));
    var reader = new FileReader();
+   var loadingSpinnerRemoved = false
 
    //console.log(file)
    // set file variables
+   /*
    document.getElementById("file").onchange = function(e) {
       //e.preventDefault()
       file = (e.target).files[0];
@@ -105,8 +106,8 @@
       }
       //rest of your code...
    }
-   
-   
+   */
+
    async function uploadFormData() {
       let response = await fetch("http://localhost:8001/upload", {
          method: "POST",
@@ -124,30 +125,45 @@
    button.addEventListener("click", event => {
       //var file = document.getElementById("file").files[0]
       //event.preventDefault()
+      fileObject = document.getElementById("file")
+      file = fileObject.files[0]
+      //reader.readAsArrayBuffer(file);
+      fileLength = fileObject.files.length
+      console.log(file.name, fileLength)
+      console.log(file)
+      formData.append("video_file", file)
+
       console.log(fileLength)
       if (fileLength == 0) {
          alert("no file selected")
          console.log("no file selected")
          return
       }
-      removeButton()
-      //addLoadingSpinner()
-      addProgressBar()
-      var progressBarDiv = document.getElementById("progressBarDiv")
-      var progressBar = document.getElementById("progressBar")
+
       uploadFormData()
+      removeButton()
+      addLoadingSpinner()
+      //addProgressBar()
+      //var loadingSpinnerDiv = document.getElementById("loadingSpinnerDiv")
+      //var loadingSpinner = document.getElementById("loadingSpinner")
       getUploadStatus()
    })
-   
+
 
    function addLoadingSpinner() {
-      newLoadingSpinner.setAttribute("id", "loadingSpinner")
-      newLoadingSpinner.setAttribute("class", "flex items-center justify-center")
+      newLoadingSpinnerDiv.setAttribute("id", "loadingSpinnerDiv")
+      newLoadingSpinnerDiv.setAttribute("class", "flex items-center justify-center")
 
-      newLoadingSpinner.innerHTML = `
-         <div class="w-16 h-16 border-b-2 border-gray-900 rounded-full animate-spin"></div>
+      newLoadingSpinnerDiv.innerHTML = `
+         <div id="loadingSpinner" class="w-16 h-16 border-b-2 border-gray-900 rounded-full animate-spin"></div>
          `
-      uploadForm.appendChild(newLoadingSpinner)
+      uploadForm.appendChild(newLoadingSpinnerDiv)
+
+      console.log("parent node", newLoadingSpinnerDiv.parentNode)
+   }
+   function removeLoadingSpinner() {
+      newLoadingSpinnerDiv.remove(newLoadingSpinnerDiv)
+
    }
 
    function addButton() {
@@ -159,60 +175,68 @@
                Upload
             </button>`
       uploadForm.appendChild(newButtonDiv)
+
    }
    function removeButton() {
       buttonDiv.parentNode.removeChild(buttonDiv)
+
    }
 
    function addProgressBar() {
-      newProgressBar.setAttribute("id", "progressBarDiv")
-      newProgressBar.setAttribute("class", "h-3 relative max-w-xl rounded-full overflow-hidden")
-      newProgressBar.innerHTML = `
+      newProgressBarDiv.setAttribute("id", "progressBarDiv")
+      newProgressBarDiv.setAttribute("class", "h-3 relative max-w-xl rounded-full overflow-hidden")
+      newProgressBarDiv.innerHTML = `
       <div class="w-full h-full bg-gray-200 absolute"></div>
       <div id="progressBar" class="transition-all ease-out duration-1000 h-full bg-green-500 relative w-0"></div>`
 
-      uploadForm.appendChild(newProgressBar)
+
+      uploadForm.appendChild(newProgressBarDiv)
 
    }
    function removeProgressBar() {
-      newProgressBar.parentNode.removeChild(newProgressBar)
+      newProgressBarDiv.parentNode.removeChild(newProgressBarDiv)
    }
-   function getUploadStatus() {
-      fetch("http://localhost:8001/getUploadStatus/" + videoID)
-         .then(response => response.text())
-         .then(data => {
+   async function getUploadStatus() {
+      const response = await fetch("http://localhost:8001/getUploadStatus/" + videoID);
+      const status = await response.status
+      const data = await response.text();
+
+      console.log(status)
+      console.log(data)
+      if (status == 200) {
+         if (loadingSpinnerRemoved == false) {
+            loadingSpinnerRemoved = true
+            removeLoadingSpinner()
+         }
+         addProgressBar()
+         var progressBarDiv = document.getElementById("progressBarDiv")
+         var progressBar = document.getElementById("progressBar")
+         progressBar.setAttribute("value", data)
+         progressBar.style.width = data + "%"
+
+
+         if (data == 100) {
             console.log(data)
-            /*
-            if (data == 0 || data == null) {
-               addLoadingSpinner()
-            } else {
-               uploadForm.parentNode.removeChild(newLoadingSpinner)
-               addProgressBar()
-               progressBar.setAttribute("value", data)
-               progressBar.style.width = data + "%"
-            }
-            */
             progressBar.setAttribute("value", data)
             progressBar.style.width = data + "%"
-            if (data == 100) {
-               console.log(data)
-               progressBar.setAttribute("value", data)
-               progressBar.style.width = data + "%"
-               
-               //remove progress bar
-               removeProgressBar()
-               //add button back
-               addButton()
-               console.log("video has been uploaded and is ready to play!")
-               alert("video has been uploaded and is ready to play!")
 
-               clearTimeout(timeoutID)
-               window.location = "/videos"
-            } else {
-               timeoutID = setTimeout(getUploadStatus, 1000)
-            }
-         })
+            //remove progress bar
+            removeProgressBar()
+            //add button back
+            addButton()
+            console.log("video has been uploaded and is ready to play!")
+            alert("video has been uploaded and is ready to play!")
 
+            clearTimeout(timeoutID)
+            window.location = "/videos"
+            return
+         } else {
+            timeoutID = setTimeout(getUploadStatus, 1000)
+         }
+      } else if (status == 404) {
+         //loadingSpinnerRemoved = false
+         timeoutID = setTimeout(getUploadStatus, 2000)
+      }
    }
    document.getElementById('file').addEventListener('change', function (event) {
       var thumbnail = document.getElementById("thumbnailImg")

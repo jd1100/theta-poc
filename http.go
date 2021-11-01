@@ -72,18 +72,12 @@ type TranscodeVideoResponse struct {
 
 var apiID *string
 var apiSecret *string
-var uploadUrl string
-var uploadId string
-var state string
-var progress float64
-var playbackURI string
-var videoID string
-var transcodeVideoResponse TranscodeVideoResponse
-var newVideo Video
+
 var uploadedVideos []Video
-var progressString string
 var wg sync.WaitGroup
-var temp_videoID string
+var ip *string
+var port *string
+var defaultIPPort string
 
 // go-sessions package
 //var cookieNameForSessionID = "mycookienamesessionnameid"
@@ -103,7 +97,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	t, _ := template.ParseFiles("./src/home.html")
 	if r.Method == "GET" {
-		t.Execute(w, videoID)
+		t.Execute(w, nil)
 		fmt.Println("new get request")
 	} else {
 		fmt.Println("post requests not allowed")
@@ -119,6 +113,8 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		t := template.Must(template.New("upload.html").Funcs(fmap).ParseFiles("./src/upload.html"))
 	*/
+	var videoID string
+	isError := false
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("./src/upload.html")
 		err := t.Execute(w, nil)
@@ -137,7 +133,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		//fmt.Println(httputil.DumpRequest(r, true))
 		//b, err := io.ReadAll(r.Body)
 		//fmt.Println(string(b))
-		maxSize := int64(10240000000) // allow only 1GB of file size
+		maxSize := int64(102400000000) // allow only 1GB of file size
 		err := r.ParseMultipartForm(maxSize)
 
 		if err != nil {
@@ -161,6 +157,12 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		go func() {
 			defer wg.Done()
+			var uploadId string
+			var uploadUrl string
+			var newVideo Video
+			//var progress float64
+			//var playbackURI string
+			//var state string
 
 			fmt.Println("starting theta upload process")
 			api_key := *apiID
@@ -241,14 +243,38 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			defer res.Body.Close()
 
 			err = json.NewDecoder(res.Body).Decode(&transcodeVideoResponse)
-			fmt.Println(transcodeVideoResponse.Status)
-			videoID = transcodeVideoResponse.Body.Videos[0].ID
+			transcodeStatus := transcodeVideoResponse.Status
+			if transcodeStatus == "success" {
+				videoID = transcodeVideoResponse.Body.Videos[0].ID
+				newVideo = transcodeVideoResponse.Body.Videos[0]
+				progress := newVideo.Progress
+				playbackURI := newVideo.PlaybackURI
+				state := newVideo.State
+				fmt.Println(videoID, progress, playbackURI, state)
+			} else {
+				fmt.Println("error transcoding video")
+				isError = true
+				return
+			}
 		}()
 		wg.Wait()
-		fmt.Println(videoID)
-		fmt.Fprintf(w, videoID)
+		if isError != false {
+			fmt.Println("error transcoding video... exiting ")
+			fmt.Fprintf(w, "error transcoding video")
+			return
+		} else {
+			fmt.Println(videoID)
+			fmt.Fprintf(w, videoID)
+		}
 
 		go func() {
+			//defer wg.Done()
+			var transcodeVideoResponse2 TranscodeVideoResponse
+			var progress2 float64
+			var playbackURI2 string
+			var state2 string
+			var newVideo2 Video
+
 			api_key := *apiID
 			api_secret := *apiSecret
 			client := &http.Client{}
@@ -264,15 +290,12 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			defer res.Body.Close()
 
 			body, err := ioutil.ReadAll(res.Body)
-			err = json.Unmarshal(body, &transcodeVideoResponse)
+			err = json.Unmarshal(body, &transcodeVideoResponse2)
 
-			for _, videos := range transcodeVideoResponse.Body.Videos {
-				progress = videos.Progress
-				playbackURI = videos.PlaybackURI
-				state = videos.State
-				break
-			}
-			for state != "success" || state != "failed" {
+			progress2 = transcodeVideoResponse2.Body.Videos[0].Progress
+			playbackURI2 = transcodeVideoResponse2.Body.Videos[0].PlaybackURI
+			state2 = transcodeVideoResponse2.Body.Videos[0].State
+			for state2 != "success" || state2 != "failed" {
 				client := &http.Client{}
 				req, _ := http.NewRequest("GET", "https://api.thetavideoapi.com/video/"+videoID, nil)
 
@@ -282,23 +305,25 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 				res, _ := client.Do(req)
 
 				body, _ := ioutil.ReadAll(res.Body)
-				err = json.Unmarshal(body, &transcodeVideoResponse)
+				err = json.Unmarshal(body, &transcodeVideoResponse2)
 
-				newVideo = transcodeVideoResponse.Body.Videos[0]
-				progress = newVideo.Progress
-				playbackURI = newVideo.PlaybackURI
-				state = newVideo.State
+				newVideo2 = transcodeVideoResponse2.Body.Videos[0]
+				progress2 = newVideo2.Progress
+				playbackURI2 = newVideo2.PlaybackURI
+				state2 = newVideo2.State
+				fmt.Println(progress2)
 
-				if state == "success" {
+				if state2 == "success" {
 					fmt.Println("video successfully transcoded")
-					fmt.Println("video playback url: " + playbackURI)
-					//add newVideo to uploadedVideos slice
-					uploadedVideos = append(uploadedVideos, newVideo)
+					fmt.Println("video playback url: " + playbackURI2)
 
 					templ, err := template.ParseFiles("./src/videos.html")
 					if err != nil {
 						fmt.Println(err)
 					}
+
+					//add newVideo to uploadedVideos slice
+					uploadedVideos = append(uploadedVideos, newVideo2)
 					err = templ.Execute(w, uploadedVideos)
 					if err != nil {
 						fmt.Println(err)
@@ -309,11 +334,13 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 			}
 		}()
+		//wg.Wait()
 		//t, _ := template.ParseFiles("./src/upload.html")
 		//err = t.ExecuteTemplate(w, "upload", videoID)
 		if err != nil {
 			fmt.Println(err)
 		}
+		return
 
 	}
 
@@ -330,9 +357,9 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		playbackURI = r.PostForm.Get("playbackURI")
-		fmt.Println(playbackURI)
-		t.Execute(w, playbackURI)
+		playbackURI2 := r.PostForm.Get("playbackURI")
+		fmt.Println(playbackURI2)
+		t.Execute(w, playbackURI2)
 		/*
 			fmt.Println("grabbing requested video " + je + "from cdn")
 			client = &http.Client{}
@@ -351,6 +378,7 @@ func listVideosHandler(w http.ResponseWriter, r *http.Request) {
 	templ, _ := template.ParseFiles("./src/videos.html")
 
 	if r.Method == "GET" {
+		//fmt.Println(uploadedVideos)
 		templ.Execute(w, uploadedVideos)
 	} else {
 		fmt.Println("no post requests allowed")
@@ -404,6 +432,7 @@ func getUploadStatus(w http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
+	var transcodeVideoResponse TranscodeVideoResponse
 	err = json.Unmarshal(body, &transcodeVideoResponse)
 	if err != nil {
 		fmt.Println(err)
@@ -450,25 +479,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
-func setVideoID(r *http.Request) {
-
-	sessionManager.Put(r.Context(), "videoID", videoID)
-	defer wg.Done()
-}
-
 func main() {
-	//http.Handle("/", http.FileServer(http.Dir("./src/")))
-	defaultIPPort := "localhost:8001"
 
 	// scs session manager setup
 	sessionManager = scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 
-	apiID = flag.String("api-id", "hello", "startup")
-	apiSecret = flag.String("api-secret", "hello", "startup")
-
+	apiID = flag.String("api-id", "", "startup")
+	apiSecret = flag.String("api-secret", "", "startup")
+	ip = flag.String("ip", "localhost", "startup")
+	port = flag.String("port", "8001", "startup")
 	flag.Parse()
+
+	if *apiID == "" || *apiSecret == "" {
+		fmt.Println("no API keys provided. Exiting")
+		return
+	}
+
+	defaultIPPort = *ip + ":" + *port
+
 	fmt.Println("api-id: ", *apiID)
 	fmt.Println("api-secret", *apiSecret)
 	fmt.Println("Listening on", defaultIPPort)
