@@ -1,18 +1,34 @@
+{{define "login"}}
+<html>
+   <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   </head>
 <body>
    <div>
       <h1>Login</h1>
-      <form id="loginForm" action="/login" method="post">
+      <form id="loginForm" action="/login" method="post" >
          username
          <input id="username" type="text" name="username">
          <br>
          password
          <input id="password" type="password" name="password" >
          <br>
-         <input id="submitButton" type="submit">
+         <input id="submitButton" type="submit" onsubmit="redirect()">
       </form>
    </div>
 </body>
-
+</html>
 <script>
 
+document.getElementById("loginForm").addEventListener("submit", function(event) {
+   console.log("form submitted")
+})
+var redirect = function() {
+   console.log("kjenrkvjnekj")
+   document.location.href="/"
+}
 </script>
+{{end}}
+
+{{template "login"}}

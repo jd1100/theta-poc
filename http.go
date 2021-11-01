@@ -95,10 +95,22 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	//p := mediaSearch{searchString: query, mediaSource: source}
 	//fmt.Println(p.mediaSource, p.searchString)
 
-	t, _ := template.ParseFiles("./src/home.html")
+	rootTemplate, _ := template.ParseFiles("./src/home.html")
 	if r.Method == "GET" {
-		t.Execute(w, nil)
+		
+
+		// check if user is logged in
+		if  sessionManager.Exists(r.Context(), "username") == true {
+			username := sessionManager.GetString(r.Context(), "username")
+			//fmt.Fprintf(w, username)
+			fmt.Println("user:", username, "is logged in!")
+			rootTemplate.Execute(w, username)
+
+		} else {
+			rootTemplate.Execute(w, nil)
+		}
 		fmt.Println("new get request")
+
 	} else {
 		fmt.Println("post requests not allowed")
 	}
@@ -463,22 +475,32 @@ func getUploadStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/login" {
-		return
-	}
+	loginTemplate, _ := template.ParseFiles("./src/login.html")
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("./src/login.html")
-		t.Execute(w, nil)
+		//loginTemplate, _ := template.ParseFiles("./src/login.html")
+		loginTemplate.Execute(w, nil)
 	} else if r.Method == "POST" {
 		r.ParseForm()
-
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 
+		sessionManager.Put(r.Context(), "username", username)
 		fmt.Println(username, password)
+		http.Redirect(w, r, "/", 302)
+
 	}
 
 }
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		if sessionManager.Exists(r.Context(), "username") == true {
+			sessionManager.Destroy(r.Context())
+			http.Redirect(w, r, "/", 302)
+		}
+		return
+	}
+}
+
 func main() {
 
 	// scs session manager setup
@@ -509,10 +531,10 @@ func main() {
 	mux.HandleFunc("/playVideo", playVideoHandler)
 	mux.HandleFunc("/videos", listVideosHandler)
 	mux.HandleFunc("/login", loginHandler)
-
+	mux.HandleFunc("/logout", logoutHandler)
 	mux.HandleFunc("/upload", videoUploadHandler)
 	mux.HandleFunc("/getUploadStatus/{id:video_[a-z0-9]{26}}", getUploadStatus)
 
 	//watch video
-	http.ListenAndServe(defaultIPPort, mux)
+	http.ListenAndServe(defaultIPPort, sessionManager.LoadAndSave(mux))
 }

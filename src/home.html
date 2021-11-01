@@ -7,11 +7,24 @@
   <body>
     welcome to theta poc
     <br>
-    <a href="/upload">upload video</a>
+    {{if . }}
+      hello {{.}}!
+      <br>
+    {{end}}
     <br>
+    <a href="/upload" id="uploadButton">upload video</a>
+    <br>
+    {{if . }}
+    <a href="/logout">logout</a>
+    <br>
+    {{else}}
     <a href="/login">login</a>
     <br>
+    {{end}}
     <a href="/videos">watch uploaded videos</a>
 
   </body>
 </html>
+
+<script>
+</script>
