@@ -4,12 +4,17 @@ poc for theta network utilizing the thetavideoapi and the theta p2p js library
 # Usage
 
 > Create an app on thetavideoapi.com to generate the api keys
-
+## Arguments
+- ``--api-id`` (required) -> defines api id from the [theta video api](thetavideoapi.com)
+- ``--api-secret`` (required) -> defines api secret from [theta video api](thetavideoapi.com)
+- ``--ip`` (optional) -> defines ip on which run the web server (default value is localhost)
+- ``--port`` (optional) -> defines port on which to run the web server (default value is 8001)
+---
 build binary
 ```go build http.go```
 
-run binary with the api keys as arguments
-```./http --api-id="{API Key}" --api-secret="{API Secret}"
+run binary with the api key/secret as arguments and optionally define the ip and port
+```./http --api-id {API Key} --api-secret {API Secret} --ip {ip address} --port {port number} 
 
 web server runs on port 8001
 
