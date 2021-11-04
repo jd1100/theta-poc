@@ -9,6 +9,7 @@ poc for theta network utilizing the thetavideoapi and the theta p2p js library
 - ``--api-secret`` (required) -> defines api secret from [theta video api](thetavideoapi.com)
 - ``--ip`` (optional) -> defines ip on which run the web server (default value is localhost)
 - ``--port`` (optional) -> defines port on which to run the web server (default value is 8001)
+- ``--dbPath`` (optional) -> defines path to bitcask db file (default value is /tmp/db)
 ---
 build binary
 ```go build http.go```
@@ -31,8 +32,11 @@ web server runs on port 8001
 - "net/url"
 - "strings"
 - "time"
-- "github.com/alexedwards/scs"
+- "git.mills.io/prologic/bitcask"
+- "github.com/alexedwards/scs/v2"
 - "github.com/gorilla/mux"
+- "golang.org/x/crypto/bcrypt"
+- "github.com/google/uuid"
 ## JavaScript/CSS
 - tailwindcss 
 - video.js v7.10.2 https://vjs.zencdn.net/7.10.2/video.min.js/https://vjs.zencdn.net/7.10.2/video-js.min.css

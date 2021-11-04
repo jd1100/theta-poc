@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>Where To?</title>
+   </head>
+   <body>
+      <a href="/">back</a>
+      <form action="/playVideo" method=post>
+         <table>
+            <tr>
+               <th>username</th>
+               <th>video name</th>
+               <th>video link</th>
+            </tr>
+            {{range .}}
+            <tr>
+               <th>{{.Username}}</th>
+               <th>{{.VideoName}}</th>
+               <th><input type="submit" name="playbackURI" value="{{.Video.PlaybackURI}}"></th>
+            </tr>
+            {{end}}
+         </table>
+      </form>
+   </body>
+</html>

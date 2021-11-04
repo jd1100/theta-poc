@@ -14,11 +14,32 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	"git.mills.io/prologic/bitcask"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
+	"github.com/google/uuid"
 )
 
+type User struct {
+	Username string
+	Email string
+	Password string
+	ID string
+	Videos []Video
+}
+
+type UploadedVideo struct {
+	Username string
+	VideoName string
+	FileName string
+	Video Video
+}
+
+type ServerInfo struct {
+	IP string
+	Port string
+}
 type PreSignedURLResponse struct {
 	Status string `json:"status"`
 	Body   struct {
@@ -75,9 +96,10 @@ var apiSecret *string
 
 var uploadedVideos []Video
 var wg sync.WaitGroup
-var ip *string
-var port *string
+var ip* string
+var port* string
 var defaultIPPort string
+var dbPath string
 
 // go-sessions package
 //var cookieNameForSessionID = "mycookienamesessionnameid"
@@ -95,7 +117,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	//p := mediaSearch{searchString: query, mediaSource: source}
 	//fmt.Println(p.mediaSource, p.searchString)
 
-	rootTemplate, _ := template.ParseFiles("./src/home.html")
+	rootTemplate, _ := template.ParseFiles("./templates/home.html")
 	if r.Method == "GET" {
 		
 
@@ -123,12 +145,16 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		fmap := template.FuncMap{
 			"getVideoID": waitForVideoID,
 		}
-		t := template.Must(template.New("upload.html").Funcs(fmap).ParseFiles("./src/upload.html"))
+		t := template.Must(template.New("upload.html").Funcs(fmap).ParseFiles("./templates/upload.html"))
 	*/
 	var videoID string
 	isError := false
+	t, _ := template.ParseFiles("./templates/upload.html")
+	if sessionManager.Exists(r.Context(), "username") == false {
+		fmt.Fprintf(w, "error 404 user not logged in")
+		return
+	}
 	if r.Method == "GET" {
-		t, _ := template.ParseFiles("./src/upload.html")
 		err := t.Execute(w, nil)
 		if err != nil {
 			fmt.Println(err)
@@ -136,6 +162,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("new get request")
 	} else if r.Method == "POST" {
+		
 		//api_key := *apiID
 		//api_secret := *apiSecret
 		//var file *os.File
@@ -154,13 +181,15 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		file, _, err := r.FormFile("video_file")
+		file, _, err := r.FormFile("videoFile")
 		if err != nil {
 			//fmt.Println(headers)
 			log.Println(err)
 			fmt.Fprintf(w, "Could not get uploaded file")
 			return
 		}
+		fileName := r.FormValue("fileName")
+		videoName := r.FormValue("videoName")
 		defer file.Close()
 
 		// end get file upload from client browser
@@ -181,6 +210,9 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			api_secret := *apiSecret
 			client := &http.Client{}
 			data := url.Values{}
+
+			// submit a post request to theta video api to get a preassignedURL
+			// preassignedURL is url for an instance of a video upload
 			req, _ := http.NewRequest("POST", "https://api.thetavideoapi.com/upload", strings.NewReader(data.Encode()))
 			presignedUrlresponse := PreSignedURLResponse{}
 			req.Header.Add("x-tva-sa-id", api_key)
@@ -230,6 +262,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			defer res.Body.Close()
 			//fmt.Println(res)
 
+
 			// transcode video using an upload
 			transcodeVideoBody := &TranscodeVideoRequestBody{
 				SourceUploadID: uploadId,
@@ -256,18 +289,24 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 			err = json.NewDecoder(res.Body).Decode(&transcodeVideoResponse)
 			transcodeStatus := transcodeVideoResponse.Status
+			
 			if transcodeStatus == "success" {
 				videoID = transcodeVideoResponse.Body.Videos[0].ID
 				newVideo = transcodeVideoResponse.Body.Videos[0]
 				progress := newVideo.Progress
 				playbackURI := newVideo.PlaybackURI
 				state := newVideo.State
-				fmt.Println(videoID, progress, playbackURI, state)
+				fmt.Println(videoID, progress, playbackURI, state) 
+
 			} else {
 				fmt.Println("error transcoding video")
+				fmt.Fprintf(w, "error transcoding video")
 				isError = true
+				w.WriteHeader(501)
+				//fmt.Fprintf(w, "error transcoding video. Please check the api keys and try again")
 				return
 			}
+			return
 		}()
 		wg.Wait()
 		if isError != false {
@@ -280,6 +319,8 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		go func() {
+			username := sessionManager.GetString(r.Context(), "username")
+			fmt.Println(username)
 			//defer wg.Done()
 			var transcodeVideoResponse2 TranscodeVideoResponse
 			var progress2 float64
@@ -290,6 +331,8 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			api_key := *apiID
 			api_secret := *apiSecret
 			client := &http.Client{}
+
+
 			req, _ := http.NewRequest("GET", "https://api.thetavideoapi.com/video/"+videoID, nil)
 
 			req.Header.Add("x-tva-sa-id", api_key)
@@ -328,26 +371,69 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 				if state2 == "success" {
 					fmt.Println("video successfully transcoded")
 					fmt.Println("video playback url: " + playbackURI2)
+					
+					var user User
+					var uploadedVideos []UploadedVideo
+					newUploadedVideo := UploadedVideo {
+						Username: username,
+						VideoName: videoName,
+						FileName: fileName,
+						Video: newVideo2,
+					}
 
-					templ, err := template.ParseFiles("./src/videos.html")
+					db, err := bitcask.Open(dbPath, bitcask.WithSync(true))
+					db.Reopen()
+					if err != nil {
+						fmt.Println(err)
+					}
+					defer db.Close()
+
+					// if the uploadedVideos object doesnt exist, create it
+					if db.Has([]byte("uploadedVideos")) == true {
+						videos, _ := db.Get([]byte("uploadedVideos"))
+						err = json.Unmarshal(videos, &uploadedVideos)
+					}
+
+					fmt.Println("old videos struct", uploadedVideos)
+
+					uploadedVideos = append(uploadedVideos, newUploadedVideo)
+
+					fmt.Println("new uploaded videos struct", uploadedVideos)
+
+					uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
+					db.Put([]byte("uploadedVideos"), uploadedVideosBytes)
+
+
+					// open db and grab the struct associated with the current logged in user
+					userStart, _ := db.Get([]byte(username))
+					err = json.Unmarshal(userStart, &user)
+					fmt.Println("old struct", user)
+					fmt.Println(user.Username, user.Email, user.ID)
+					// append new video to list of Videos defined in the user struct
+					user.Videos = append(user.Videos, newVideo2)
+					fmt.Println("new struct", user)
+					// re-encode the edited user struct and replace old version in the db
+					userReturn, _ := json.Marshal(user)
+					db.Put([]byte(username), userReturn)	
+
+					templ, err := template.ParseFiles("./templates/videos.html")
 					if err != nil {
 						fmt.Println(err)
 					}
 
-					//add newVideo to uploadedVideos slice
-					uploadedVideos = append(uploadedVideos, newVideo2)
 					err = templ.Execute(w, uploadedVideos)
 					if err != nil {
 						fmt.Println(err)
 					}
-					break
+					return
 				}
 				//time.Sleep(5 * time.Second)
 
 			}
+			return
 		}()
 		//wg.Wait()
-		//t, _ := template.ParseFiles("./src/upload.html")
+		//t, _ := template.ParseFiles("./templates/upload.html")
 		//err = t.ExecuteTemplate(w, "upload", videoID)
 		if err != nil {
 			fmt.Println(err)
@@ -361,7 +447,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	//(w).Header().Set("Access-Control-Allow-Origin", "*")
-	t, _ := template.ParseFiles("./src/playVideo.html")
+	t, _ := template.ParseFiles("./templates/playVideo.html")
 	if r.Method == "GET" {
 		fmt.Println("new get request to play video")
 	} else {
@@ -385,13 +471,32 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 		*/
 	}
 }
-
 func listVideosHandler(w http.ResponseWriter, r *http.Request) {
-	templ, _ := template.ParseFiles("./src/videos.html")
+	templ, _ := template.ParseFiles("./templates/videos.html")
 
 	if r.Method == "GET" {
-		//fmt.Println(uploadedVideos)
-		templ.Execute(w, uploadedVideos)
+
+		var videos = []UploadedVideo{}
+		db, _ := bitcask.Open(dbPath, bitcask.WithSync(true))
+		db.Reopen()
+		defer db.Close()
+
+		if db.Has([]byte("uploadedVideos")) == true {
+			uploadedVideosBytes, _ := db.Get([]byte("uploadedVideos"))
+			_ = json.Unmarshal(uploadedVideosBytes, &videos)
+			//fmt.Println(videos[0].Username, videos[0].VideoName, videos[0].FileName, videos[0].Video)
+			err := templ.Execute(w, videos)
+			if err != nil {
+				fmt.Println(err)
+			}
+			//fmt.Println(uploadedVideos)
+		} else {
+			fmt.Println("no videos uploaded yet")
+			err := templ.Execute(w, videos)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
 	} else {
 		fmt.Println("no post requests allowed")
 	}
@@ -462,33 +567,60 @@ func getUploadStatus(w http.ResponseWriter, r *http.Request) {
 	if upload_progress == 100 {
 		w.Write([]byte(progressString))
 		fmt.Println("upload complete for video: ", req_videoID)
-		//w.Write([]byte("shits done bro"))
-		//fmt.Fprintf(w, "shits done bro")
 		return
-		//sessionManager.Destroy(r.Context())
 	} else {
 		fmt.Println("fetching upload status for: ", req_videoID)
 		w.Write([]byte(progressString))
-		//fmt.Fprintf(w, upload_progress)
 	}
+	return
 
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	loginTemplate, _ := template.ParseFiles("./src/login.html")
+	loginTemplate, _ := template.ParseFiles("./templates/login.html")
+	errorMessage := "peepeepoopoo"
 	if r.Method == "GET" {
-		//loginTemplate, _ := template.ParseFiles("./src/login.html")
-		loginTemplate.Execute(w, nil)
+		//loginTemplate, _ := template.ParseFiles("./templates/login.html")
+		loginTemplate.Execute(w, errorMessage)
 	} else if r.Method == "POST" {
 		r.ParseForm()
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+		db, err := bitcask.Open(dbPath, bitcask.WithSync(true))
+		db.Reopen()
+		if err != nil {fmt.Println(err)}
+		defer db.Close()
+		// check if user is in DB. If not, display error in html
+		usernameCheck := db.Has([]byte(username))
+		if usernameCheck == true {
+			// check password against one stored in db
+			user := User{}
+			userByte, _ := db.Get([]byte(username))
+			_ = json.Unmarshal(userByte, &user)
+			userPassword := user.Password
 
-		sessionManager.Put(r.Context(), "username", username)
-		fmt.Println(username, password)
-		http.Redirect(w, r, "/", 302)
+			err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(password))
+			if err != nil {
+				fmt.Println()
+			}
+			if err != nil {
+				errorMessage = "Incorrect Password"
+				//loginTemplate.Execute(w, "incorrect password")
+			} else {
+				fmt.Println("dickmabutt")
+				sessionManager.Put(r.Context(), "username", username)
+				fmt.Println(user.Password, user.Username, user.ID, user.Email)
+				http.Redirect(w, r, "/", 302)
+			} 
+		} else {
+			errorMessage = "username not found"
+			//loginTemplate.Execute(w, "username not found")
+		}
+		fmt.Fprintf(w, errorMessage)
+		return
 
 	}
+	return
 
 }
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -499,6 +631,67 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	return
+}
+
+func registerHandler(w http.ResponseWriter, r *http.Request) {
+	registerTemplate, err := template.ParseFiles("./templates/register.html")
+	//fmt.Println(r.Method)
+	if r.Method == "GET" {
+		//fmt.Println("we're doing it")
+		registerTemplate.Execute(w, nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else if r.Method == "POST" {
+		db, err := bitcask.Open(dbPath, bitcask.WithSync(true))
+		db.Reopen()
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer db.Close()
+		var bytes []byte
+		videos := make([]Video, 0)
+		uuidWithHyphen := uuid.New()
+		userID := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
+		err = r.ParseForm()
+		if err != nil {
+			fmt.Println(err)
+		}
+		username := r.FormValue("username")
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+		fmt.Println(username)
+		if db.Has([]byte(username)) == true {
+			fmt.Println("username already exists")
+
+			registerTemplate.Execute(w, "username already exists")
+			return
+		}
+		passwordHashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+		if err != nil {
+			log.Println(err)
+		}
+		// create user object
+		user := User{
+			Username: username,
+			Email: email,
+			Password: string(passwordHashed),
+			ID: userID,
+			Videos: videos,
+		}
+
+		fmt.Println(user, "\nregistered")
+
+		// serialize user object and send to DB
+		bytes, _ = json.Marshal(user)
+		db.Put([]byte(username), bytes)
+
+		fmt.Println("user registered", user)
+		http.Redirect(w, r, "/", 302)
+		return
+	}
+	return
 }
 
 func main() {
@@ -511,7 +704,11 @@ func main() {
 	apiSecret = flag.String("api-secret", "", "startup")
 	ip = flag.String("ip", "localhost", "startup")
 	port = flag.String("port", "8001", "startup")
+	dbPathInit := flag.String("db-path", "/tmp/db", "startup")
 	flag.Parse()
+
+
+	dbPath = *dbPathInit
 
 	if *apiID == "" || *apiSecret == "" {
 		fmt.Println("no API keys provided. Exiting")
@@ -524,14 +721,15 @@ func main() {
 	fmt.Println("api-secret", *apiSecret)
 	fmt.Println("Listening on", defaultIPPort)
 
+
 	mux := mux.NewRouter()
 	// upload video
 	mux.HandleFunc("/", rootHandler)
-
-	mux.HandleFunc("/playVideo", playVideoHandler)
-	mux.HandleFunc("/videos", listVideosHandler)
 	mux.HandleFunc("/login", loginHandler)
 	mux.HandleFunc("/logout", logoutHandler)
+	mux.HandleFunc("/register", registerHandler)
+	mux.HandleFunc("/playVideo", playVideoHandler)
+	mux.HandleFunc("/videos", listVideosHandler)
 	mux.HandleFunc("/upload", videoUploadHandler)
 	mux.HandleFunc("/getUploadStatus/{id:video_[a-z0-9]{26}}", getUploadStatus)
 

@@ -1,0 +1,30 @@
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+    <div>
+        <a href="/">back</a>
+        <h1>Register</h1>
+        <form id="registrationForm" action="http://localhost:8001/register" method="post">
+            username
+            <input id="username" type="text" name="username">
+            {{.}}
+            <br>
+            email
+            <input id="email" type="email" name="email">
+            <br>
+            password
+            <input id="password" type="password" name="password">
+            <br>
+            <input id="submitButton" type="submit">
+        </form>
+    </div>
+</body>
+
+</html>
+<script>
+</script>
