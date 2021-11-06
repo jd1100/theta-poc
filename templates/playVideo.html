@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+   <link rel='icon' type='image/png' href='static/favicon.png'>
+   <link rel='stylesheet' href='static/global.css'>
+   <link rel='stylesheet' href='static/build/bundle.css'>
+
+   <script defer src='static/build/bundle.js'></script>
    <title>Theta blockchain-based hybrid CDN</title>
    
    <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
@@ -166,25 +171,6 @@
 
    // --------- Platform Theta Wallet ------------
 
-   class PlatformThetaWalletWebSocketProvider extends Theta.WalletWebSocketProvider {
-      //Override getAuth to fetch our own short TTL access token first
-      async getAuth() {
-         let result = await fetchVaultAuthToken();
-         let accessToken = result;
-
-         if (accessToken === null) {
-            //No access token, try a non-authed call
-            return {};
-         }
-
-         return {
-            //WebSocketProvider uses args instead of headers
-            args: {
-                  'access_token': accessToken
-            }
-         };
-      }
-   }
 
 // --------- Launch the App --------- 
 

@@ -447,7 +447,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	//(w).Header().Set("Access-Control-Allow-Origin", "*")
-	t, _ := template.ParseFiles("./templates/playVideo.html")
+	t, _ := template.ParseFiles("./templates/playVideo_new.html")
 	if r.Method == "GET" {
 		fmt.Println("new get request to play video")
 	} else {
@@ -723,6 +723,7 @@ func main() {
 
 
 	mux := mux.NewRouter()
+	mux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./theta-svelte/public/"))))
 	// upload video
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/login", loginHandler)
