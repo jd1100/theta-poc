@@ -1,7 +1,8 @@
-
 //import "https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js";
 import './Home.svelte';
 import './PlayVideo.svelte';
+import './UploadVideo.svelte';
+import './Videos.svelte'
 
 // Default theme. ~960B
 import '@vime/core/themes/default.css';
@@ -19,4 +20,6 @@ customElements.define('vm-file', VmFile);
 // 2. Use the following the define all the elements in the Vime library, be aware this may bloat
 // your final project size.
 defineCustomElements();
+
+
 //export { Theta, ThetaWalletConnect };

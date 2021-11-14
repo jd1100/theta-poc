@@ -1,7 +1,0 @@
-[
-  "node_modules/@thetalabs/theta-wallet-connect/dist/theta-wallet-connect.cjs.js",
-  "node_modules/bn.js/lib/bn.js",
-  "node_modules/js-sha3/src/sha3.js",
-  "src/Home.svelte",
-  "src/PlayVideo.svelte"
-]

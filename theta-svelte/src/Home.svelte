@@ -3,6 +3,7 @@
 
 <script lang="ts">
 	export let name;
+	//import './css/tailwind.pcss';
 </script>
 
 <main>

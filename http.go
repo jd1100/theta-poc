@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"mime/multipart"
 	"git.mills.io/prologic/bitcask"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
@@ -22,18 +23,19 @@ import (
 )
 
 type User struct {
-	Username string
-	Email string
-	Password string
-	ID string
-	Videos []Video
+	Username string //`json:"username"`
+	Email string //`json:"email"`
+	Password string //`json:"password"`
+	ID string //`json:"password"`
+	Videos []Video 
 }
 
 type UploadedVideo struct {
-	Username string
-	VideoName string
-	FileName string
-	Video Video
+	Username string `json:"username"`
+	VideoName string `json:"videoName"`
+	FileName string `json:"fileName"`
+	Thumbnail multipart.File `json:"thumbnail"`
+	Video Video `json: video`
 }
 
 type ServerInfo struct {
@@ -66,16 +68,16 @@ type Video struct {
 	CreateTime       time.Time   `json:"create_time"`
 	UpdateTime       time.Time   `json:"update_time"`
 	ServiceAccountID string      `json:"service_account_id"`
-	FileName         interface{} `json:"file_name"`
+	FileName         string `json:"file_name"`
 	State            string      `json:"state"`
 	SubState         string      `json:"sub_state"`
-	SourceUploadID   interface{} `json:"source_upload_id"`
+	SourceUploadID   string `json:"source_upload_id"`
 	SourceURI        string      `json:"source_uri"`
 	PlaybackPolicy   string      `json:"playback_policy"`
 	Progress         float64     `json:"progress"`
-	Error            interface{} `json:"error"`
+	Error            string `json:"error"`
 	Duration         string      `json:"duration"`
-	Resolution       interface{} `json:"resolution"`
+	Resolution       string `json:"resolution"`
 	Metadata         struct {
 	} `json:"metadata"`
 }
@@ -147,9 +149,9 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		t := template.Must(template.New("upload.html").Funcs(fmap).ParseFiles("./templates/upload.html"))
 	*/
-	var videoID string
+	videoID := ""
 	isError := false
-	t, _ := template.ParseFiles("./templates/upload.html")
+	t, _ := template.ParseFiles("./templates/upload_new.html")
 	if sessionManager.Exists(r.Context(), "username") == false {
 		fmt.Fprintf(w, "error 404 user not logged in")
 		return
@@ -165,14 +167,14 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		
 		//api_key := *apiID
 		//api_secret := *apiSecret
-		//var file *os.File
-		// get file upload from client browser
+		//var videoFile *os.File
+		// get videoFile upload from client browser
 		fmt.Println("uploading video to theta")
 		//fmt.Println()
 		//fmt.Println(httputil.DumpRequest(r, true))
 		//b, err := io.ReadAll(r.Body)
 		//fmt.Println(string(b))
-		maxSize := int64(102400000000) // allow only 1GB of file size
+		maxSize := int64(102400000000) // allow only 1GB of videoFile size
 		err := r.ParseMultipartForm(maxSize)
 
 		if err != nil {
@@ -181,18 +183,20 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		file, _, err := r.FormFile("videoFile")
+		videoFile, _, err := r.FormFile("videoFile")
+		thumbnailFile, _, err := r.FormFile("thumbnailFile")
 		if err != nil {
 			//fmt.Println(headers)
 			log.Println(err)
-			fmt.Fprintf(w, "Could not get uploaded file")
+			fmt.Fprintf(w, "Could not get uploaded videoFile")
 			return
 		}
 		fileName := r.FormValue("fileName")
 		videoName := r.FormValue("videoName")
-		defer file.Close()
 
-		// end get file upload from client browser
+		defer videoFile.Close()
+
+		// end get videoFile upload from client browser
 
 		wg.Add(1)
 
@@ -230,10 +234,12 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			err = json.Unmarshal(body, &presignedUrlresponse)
 
+
 			if err != nil {
 				fmt.Println(err)
 			}
-			//fmt.Println(presignedUrlresponse)
+			
+			fmt.Println(presignedUrlresponse)
 			for index, upload := range presignedUrlresponse.Body.Uploads {
 				fmt.Println(index)
 				if len(presignedUrlresponse.Body.Uploads) == 1 {
@@ -249,8 +255,8 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			//t.Execute(w, nil)
 
 			// upload video to presigned url
-			req, _ = http.NewRequest("PUT", uploadUrl, file)
-			fmt.Println("uploading file to preassigned url")
+			req, _ = http.NewRequest("PUT", uploadUrl, videoFile)
+			fmt.Println("uploading videoFile to preassigned url")
 			req.Header.Add("Content-Type", "application/octet-stream")
 
 			res, err = client.Do(req)
@@ -313,9 +319,12 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("error transcoding video... exiting ")
 			fmt.Fprintf(w, "error transcoding video")
 			return
-		} else {
+		} else if videoID != "" {
 			fmt.Println(videoID)
 			fmt.Fprintf(w, videoID)
+		} else {
+			fmt.Println("error uploading. Video not found")
+			fmt.Fprintf(w, "error uploading. Video not found")
 		}
 
 		go func() {
@@ -378,6 +387,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 						Username: username,
 						VideoName: videoName,
 						FileName: fileName,
+						Thumbnail: thumbnailFile,
 						Video: newVideo2,
 					}
 
@@ -447,52 +457,43 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 
 	//(w).Header().Set("Access-Control-Allow-Origin", "*")
+	halfURI := "https://media.thetavideoapi.com/"
+	endURI := "/master.m3u8"
+	reqVideoID := strings.TrimPrefix(r.URL.Path, "/playVideo/")
+
+	uri := halfURI + reqVideoID + endURI 
 	t, _ := template.ParseFiles("./templates/playVideo_new.html")
 	if r.Method == "GET" {
 		fmt.Println("new get request to play video")
-	} else {
-		err := r.ParseForm()
-		if err != nil {
-			fmt.Println(err)
-		}
-		playbackURI2 := r.PostForm.Get("playbackURI")
-		fmt.Println(playbackURI2)
-		t.Execute(w, playbackURI2)
-		/*
-			fmt.Println("grabbing requested video " + je + "from cdn")
-			client = &http.Client{}
-			req, _ = http.NewRequest("GET", "https://api.thetavideoapi.com/video/"+videoID, nil)
-			req.Header.Add("x-tva-sa-id", api_key)
-			req.Header.Add("x-tva-sa-secret", api_secret)
-			res, _ = client.Do(req)
-			defer res.Body.Close()
-			body, err = ioutil.ReadAll(res.Body)
-			err = json.Unmarshal(body, &transcodeVideoResponse)
-		*/
+		fmt.Println(uri)
+		t.Execute(w, uri)
 	}
 }
 func listVideosHandler(w http.ResponseWriter, r *http.Request) {
-	templ, _ := template.ParseFiles("./templates/videos.html")
+	templ, _ := template.ParseFiles("./templates/videos_new.html")
 
 	if r.Method == "GET" {
 
-		var videos = []UploadedVideo{}
+		//var videos = []UploadedVideo{}
 		db, _ := bitcask.Open(dbPath, bitcask.WithSync(true))
 		db.Reopen()
 		defer db.Close()
 
 		if db.Has([]byte("uploadedVideos")) == true {
 			uploadedVideosBytes, _ := db.Get([]byte("uploadedVideos"))
-			_ = json.Unmarshal(uploadedVideosBytes, &videos)
+			fmt.Println(string(uploadedVideosBytes))
+			//_ = json.Unmarshal(uploadedVideosBytes, &videos)
+			//jsonData, _ := json.Marshal(videos)
+			//fmt.Println(string(jsonData))
 			//fmt.Println(videos[0].Username, videos[0].VideoName, videos[0].FileName, videos[0].Video)
-			err := templ.Execute(w, videos)
+			err := templ.Execute(w, string(uploadedVideosBytes))
 			if err != nil {
 				fmt.Println(err)
 			}
 			//fmt.Println(uploadedVideos)
 		} else {
 			fmt.Println("no videos uploaded yet")
-			err := templ.Execute(w, videos)
+			err := templ.Execute(w, nil)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -578,10 +579,10 @@ func getUploadStatus(w http.ResponseWriter, r *http.Request) {
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	loginTemplate, _ := template.ParseFiles("./templates/login.html")
-	errorMessage := "peepeepoopoo"
+	var errorMessage string
 	if r.Method == "GET" {
 		//loginTemplate, _ := template.ParseFiles("./templates/login.html")
-		loginTemplate.Execute(w, errorMessage)
+		loginTemplate.Execute(w, nil)
 	} else if r.Method == "POST" {
 		r.ParseForm()
 		username := r.FormValue("username")
@@ -724,12 +725,13 @@ func main() {
 
 	mux := mux.NewRouter()
 	mux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./theta-svelte/public/"))))
+	//mux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./theta-svelteKit/build/"))))
 	// upload video
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/login", loginHandler)
 	mux.HandleFunc("/logout", logoutHandler)
 	mux.HandleFunc("/register", registerHandler)
-	mux.HandleFunc("/playVideo", playVideoHandler)
+	mux.HandleFunc("/playVideo/{id:video_[a-z0-9]{26}}", playVideoHandler)
 	mux.HandleFunc("/videos", listVideosHandler)
 	mux.HandleFunc("/upload", videoUploadHandler)
 	mux.HandleFunc("/getUploadStatus/{id:video_[a-z0-9]{26}}", getUploadStatus)
