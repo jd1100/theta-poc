@@ -5,6 +5,7 @@ module.exports = {
   purge: ['./src/**/*.svelte'],
   plugins: [
     require('daisyui'),
-    require('@themesberg/flowbite/plugin')
+    require('@themesberg/flowbite/plugin'),
+    require("@tailwindcss/aspect-ratio")
   ]
  }

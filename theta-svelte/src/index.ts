@@ -2,7 +2,7 @@
 import './Home.svelte';
 import './PlayVideo.svelte';
 import './UploadVideo.svelte';
-import './Videos.svelte'
+import './Videos.svelte';
 
 // Default theme. ~960B
 import '@vime/core/themes/default.css';

@@ -10,7 +10,6 @@ window.ThetaWebWidgets = (function () {
     //Helpers
     //
 
-    
     function getScriptParams() {
         // Find all script tags
 
@@ -112,10 +111,10 @@ window.ThetaWebWidgets = (function () {
     }
 
     function renderWidget(parentElementId, url, onCompletion){
-        var parentElement = document.getElementById(parentElementId);
+        var parentElement = parentElementId
 
         //Clear old content
-        parentElement.innerHTML = '';
+        //parentElement.innerHTML = '';
 
         //Create the widget element
         var widgetElement = document.createElement('iframe');

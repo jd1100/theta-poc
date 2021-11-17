@@ -1,8 +1,10 @@
 <svelte:options tag="upload-video" />
 
 <script>
+    //import GUN from 'gun'
+    //import 'gun/sea'
+    //import 'gun/axe'
     //import { onMount } from 'svelte';
-    
     
     console.log("we're doing it")
     /*
@@ -11,6 +13,10 @@
         getUploadStatus()
     })
     */
+    export let newUploadedVideo;
+    //export const db = GUN();
+    var videoUpload;
+
     var file
     var fileLength
     var videoID = ""
@@ -53,7 +59,7 @@
         //rest of your code...
     }
     */
-
+    console.log(newUploadedVideo)
     async function uploadFormData() {
         let response = await fetch("http://localhost:8001/upload", {
             method: "POST",
@@ -73,6 +79,7 @@
         //event.preventDefault()
         videoFile = videoUpload.files[0]
         thumbnailFile = thumbnailUpload.files[0]
+
         //reader.readAsArrayBuffer(file);
         fileLength = videoUpload.files.length
         console.log(videoFile.name, fileLength)
@@ -208,11 +215,12 @@
 </script>
 
 <main>
+<div class="bg-gradient-to-b from-gray-900 via-purple-900 to-violet-600 relative">
+        
 
     <div
-      class="relative min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 bg-gray-500 bg-no-repeat bg-cover relative items-center"
-      style="background-image: url(https://images.unsplash.com/photo-1621243804936-775306a8f2e3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80);">
-      <div class="absolute bg-black opacity-60 inset-0 z-0"></div>
+      class="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-no-repeat bg-cover relative items-center">
+
       <div class="sm:max-w-lg w-full p-10 bg-white rounded-xl z-10">
         <div class="text-center">
             <h2 class="mt-5 text-3xl font-bold text-gray-900">
@@ -278,7 +286,7 @@
         </form>
       </div>
    </div>
-
+</div>
 </main>
 
 <style>

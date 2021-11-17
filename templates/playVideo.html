@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-   <link rel='icon' type='image/png' href='static/favicon.png'>
-   <link rel='stylesheet' href='static/global.css'>
-   <link rel='stylesheet' href='static/build/bundle.css'>
+   <link rel='icon' type='image/png' href='/static/favicon.png'>
+   <link rel='stylesheet' href='/static/build/bundle.css'>
 
-   <script defer src='static/build/bundle.js'></script>
+   <script defer src='/static/build/bundle.js'></script>
    <title>Theta blockchain-based hybrid CDN</title>
    
    <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
@@ -13,81 +12,13 @@
    
 
    <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
-<!--
    <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
--->
    
 </head>
 
 <body>
-   <a href="/videos">back</a>
-   <section id="header">
-      <div id="logo">
-         <a href="javascript;;"></a>
-      </div>
-      <h2 id="appTitle"></h2>
-      <div id="controls"></div>
-   </section>
-   <section id="content">
-      <div id="player_container" class="">
-         <video id="player" controls autoplay muted></video>
-      </div>
-      <div id="control-panel" style="display: flex; justify-content:space-between">
-         <div id="control-panel__left">
-            <div id="user">
-               <div class="sign_in_view hidden">
-                  <a href="javascript:;" class="sign_in">Sign in</a>
-               </div>
-               <div class="select_account_view hidden">
-                  <label for='address'>Select account:</label>
-                  <select name="address" id="address">
-                     <option value=''></option>
-                  </select>
-               </div>
-               <table class="detail_view hidden">
-                  <tr>
-                     <td class="label">Name:</td>
-                     <td class="name right"> </td>
-                  </tr>
-                  <tr>
-                     <td class="label">Address:</td>
-                     <td class="address right small"></td>
-                  </tr>
-                  <tr>
-                     <td class="label">Balance:</td>
-                     <td class="balance right small"></td>
-                  </tr>
-                  <tr>
-                     <td></td>
-                     <td>
-                        <!-- <a href="javascript:;" class="switch">Switch Account</a> -->
-                     </td>
-                  </tr>
-               </table>
-            </div>
-         </div>
-         <div id="p2p-efficiency-container" style="align-self: flex-end; display: none;">
-            <div id="p2p-control">
-               <span>
-               <span id="num_peers">0</span> Peer(s)</span>
-            </div>
-            <div style="display: flex">
-               <div>Inbound peer delivery efficiency&nbsp;&nbsp;&nbsp;:&nbsp;</div>
-               <div id="p2p-efficiency-in">0.00%</div>
-            </div>
-            <div style="display: flex">
-               <div>Outbound peer delivery efficiency:&nbsp;</div>
-               <div id="p2p-efficiency-out">0.00%</div>
-            </div>
-         </div>
-      </div>
-      <div class="display-overlay" id="display-overlay">
-         <div class="btn tx" id="switch-text">CDN + P2P Traffic</div>
-         <label class="p2pswitch">
-            <input type="checkbox" checked></input>
-            <span class="slider" onclick="toggleUseCDN()"></span>
-         </label>
-      </div>
+   <section>
+      <video id="player"></video>
       <!-- Optional - For Theta Web Widget -->
       <div id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
    </section>
@@ -252,7 +183,7 @@
             path: ""
          },
 
-         debug: false
+         debug: true
       });
 
       // Event handlers
@@ -305,9 +236,8 @@
 
       //Optional - Setup Theta Web Widgets
       var widget = new ThetaWebWidgets.OverviewWithTrafficChartWidget();
-      widget.setTheme(ThetaWebWidgets.Themes.Light);
+      widget.setTheme(ThetaWebWidgets.Themes.Dark);
       widget.setMainMessage("Welcome to the Sample Integration. Help us test blockchain video sharing and earn TFUEL.");
-      widget.render("SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER");
    }
    window.addEventListener("load", startApp)
 </script>

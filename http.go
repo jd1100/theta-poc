@@ -14,12 +14,16 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"mime/multipart"
+	//"mime/multipart"
 	"git.mills.io/prologic/bitcask"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 	"github.com/google/uuid"
+	"encoding/base64"
+	//"github.com/timshannon/badgerhold/v4"
+	"github.com/dgraph-io/badger/v3"
+	//"regexp"
 )
 
 type User struct {
@@ -34,7 +38,7 @@ type UploadedVideo struct {
 	Username string `json:"username"`
 	VideoName string `json:"videoName"`
 	FileName string `json:"fileName"`
-	Thumbnail multipart.File `json:"thumbnail"`
+	Thumbnail string `json:"thumbnail"`
 	Video Video `json: video`
 }
 
@@ -77,7 +81,7 @@ type Video struct {
 	Progress         float64     `json:"progress"`
 	Error            string `json:"error"`
 	Duration         string      `json:"duration"`
-	Resolution       string `json:"resolution"`
+	Resolution       interface{} `json:"resolution"`
 	Metadata         struct {
 	} `json:"metadata"`
 }
@@ -102,7 +106,8 @@ var ip* string
 var port* string
 var defaultIPPort string
 var dbPath string
-
+var dbPath2 string
+//var options = badgerhold.DefaultOptions
 // go-sessions package
 //var cookieNameForSessionID = "mycookienamesessionnameid"
 //var cookie CookieStruct
@@ -141,7 +146,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
-
+	var newUploadedVideo UploadedVideo
 	//testString := "input string value"
 	/*
 		fmap := template.FuncMap{
@@ -149,6 +154,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		t := template.Must(template.New("upload.html").Funcs(fmap).ParseFiles("./templates/upload.html"))
 	*/
+	var base64ThumbnailFile string
 	videoID := ""
 	isError := false
 	t, _ := template.ParseFiles("./templates/upload_new.html")
@@ -185,6 +191,14 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		videoFile, _, err := r.FormFile("videoFile")
 		thumbnailFile, _, err := r.FormFile("thumbnailFile")
+		buf := bytes.NewBuffer(nil)
+		_, err  = io.Copy(buf, thumbnailFile)
+		if err != nil {
+			fmt.Println(err)
+		}
+	
+		base64ThumbnailFile = base64.StdEncoding.EncodeToString(buf.Bytes())
+		//fmt.Println(base64ThumbnailFile)
 		if err != nil {
 			//fmt.Println(headers)
 			log.Println(err)
@@ -312,6 +326,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 				//fmt.Fprintf(w, "error transcoding video. Please check the api keys and try again")
 				return
 			}
+			fmt.Fprintf(w, videoID)
 			return
 		}()
 		wg.Wait()
@@ -381,61 +396,60 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 					fmt.Println("video successfully transcoded")
 					fmt.Println("video playback url: " + playbackURI2)
 					
-					var user User
-					var uploadedVideos []UploadedVideo
-					newUploadedVideo := UploadedVideo {
+					//var user User
+					//var uploadedVideos []UploadedVideo
+					newUploadedVideo = UploadedVideo {
 						Username: username,
 						VideoName: videoName,
 						FileName: fileName,
-						Thumbnail: thumbnailFile,
+						Thumbnail: base64ThumbnailFile,
 						Video: newVideo2,
 					}
+					newUploadedVideoJson, _ := json.Marshal(newUploadedVideo)
 
-					db, err := bitcask.Open(dbPath, bitcask.WithSync(true))
-					db.Reopen()
+					// if the uploaded video already exists ignore
+					/*
+					err = db.FindOne(&uploadedVideoResult, badgerhold.Where(badgerhold.Key).Eq(videoID))
+					if err != nil {
+						fmt.Println(err)
+						fmt.Println("video not found in db")
+						return
+					}
+					db.Insert(videoID, &newUploadedVideo)
+					*/
+					db, err := badger.Open(badger.DefaultOptions(dbPath2))
+
 					if err != nil {
 						fmt.Println(err)
 					}
 					defer db.Close()
 
-					// if the uploadedVideos object doesnt exist, create it
-					if db.Has([]byte("uploadedVideos")) == true {
-						videos, _ := db.Get([]byte("uploadedVideos"))
-						err = json.Unmarshal(videos, &uploadedVideos)
-					}
 
-					fmt.Println("old videos struct", uploadedVideos)
-
-					uploadedVideos = append(uploadedVideos, newUploadedVideo)
-
-					fmt.Println("new uploaded videos struct", uploadedVideos)
-
-					uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
-					db.Put([]byte("uploadedVideos"), uploadedVideosBytes)
-
-
-					// open db and grab the struct associated with the current logged in user
-					userStart, _ := db.Get([]byte(username))
-					err = json.Unmarshal(userStart, &user)
-					fmt.Println("old struct", user)
-					fmt.Println(user.Username, user.Email, user.ID)
-					// append new video to list of Videos defined in the user struct
-					user.Videos = append(user.Videos, newVideo2)
-					fmt.Println("new struct", user)
-					// re-encode the edited user struct and replace old version in the db
-					userReturn, _ := json.Marshal(user)
-					db.Put([]byte(username), userReturn)	
-
-					templ, err := template.ParseFiles("./templates/videos.html")
+					// if the uploadedVideo object doesnt exist, create it
+					err = db.Update(func(txn *badger.Txn) error {
+						// Your code here…
+						videoEntry, err := txn.Get([]byte(videoID))
+						if err != nil {
+							fmt.Println(err)
+							fmt.Println("failed getting video entry")
+							err = txn.Set([]byte(videoID), newUploadedVideoJson)
+							if err != nil {
+								fmt.Println(err)
+							}
+							return nil
+						} else {
+							
+							var value []byte
+							value, err = videoEntry.ValueCopy(nil)
+							fmt.Println(value)
+						}
+						return nil
+					})
 					if err != nil {
 						fmt.Println(err)
 					}
 
-					err = templ.Execute(w, uploadedVideos)
-					if err != nil {
-						fmt.Println(err)
-					}
-					return
+					return	
 				}
 				//time.Sleep(5 * time.Second)
 
@@ -443,8 +457,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}()
 		//wg.Wait()
-		//t, _ := template.ParseFiles("./templates/upload.html")
-		//err = t.ExecuteTemplate(w, "upload", videoID)
+
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -456,7 +469,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 
-	//(w).Header().Set("Access-Control-Allow-Origin", "*")
+	(w).Header().Set("Access-Control-Allow-Origin", "*")
 	halfURI := "https://media.thetavideoapi.com/"
 	endURI := "/master.m3u8"
 	reqVideoID := strings.TrimPrefix(r.URL.Path, "/playVideo/")
@@ -475,25 +488,43 @@ func listVideosHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 
 		//var videos = []UploadedVideo{}
-		db, _ := bitcask.Open(dbPath, bitcask.WithSync(true))
-		db.Reopen()
-		defer db.Close()
+		var uploadedVideos []UploadedVideo
+		var uploadedVideo UploadedVideo
+		
+		db, err := badger.Open(badger.DefaultOptions(dbPath2))
 
-		if db.Has([]byte("uploadedVideos")) == true {
-			uploadedVideosBytes, _ := db.Get([]byte("uploadedVideos"))
-			fmt.Println(string(uploadedVideosBytes))
-			//_ = json.Unmarshal(uploadedVideosBytes, &videos)
-			//jsonData, _ := json.Marshal(videos)
-			//fmt.Println(string(jsonData))
-			//fmt.Println(videos[0].Username, videos[0].VideoName, videos[0].FileName, videos[0].Video)
-			err := templ.Execute(w, string(uploadedVideosBytes))
-			if err != nil {
-				fmt.Println(err)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer db.Close()
+		// search for video_ keys and append to uploadedVideos slice
+		err = db.View(func(txn *badger.Txn) error {
+			// Your code here…
+			opts := badger.DefaultIteratorOptions
+  			//opts.PrefetchValues = false
+			it := txn.NewIterator(opts)
+			defer it.Close()
+			prefix := []byte("video_")
+			var value []byte
+			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+				videoEntry := it.Item()
+				//k := videoEntry.Key()
+				value, err = videoEntry.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+				json.Unmarshal(value, &uploadedVideo)
+				uploadedVideos = append(uploadedVideos, uploadedVideo)
 			}
-			//fmt.Println(uploadedVideos)
+			return nil
+		})
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("error grabbing uploaded videos")
 		} else {
-			fmt.Println("no videos uploaded yet")
-			err := templ.Execute(w, nil)
+			uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
+			//fmt.Println(uploadedVideos)
+			err := templ.Execute(w, string(uploadedVideosBytes))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -587,6 +618,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+
+
 		db, err := bitcask.Open(dbPath, bitcask.WithSync(true))
 		db.Reopen()
 		if err != nil {fmt.Println(err)}
@@ -710,6 +743,10 @@ func main() {
 
 
 	dbPath = *dbPathInit
+	dbPath2 = "/tmp/data"
+
+	//options.Dir = "data"
+	//options.ValueDir = "data"
 
 	if *apiID == "" || *apiSecret == "" {
 		fmt.Println("no API keys provided. Exiting")
