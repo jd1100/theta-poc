@@ -784,7 +784,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println(r.Method)
 	if r.Method == "GET" {
 		//fmt.Println("we're doing it")
-		templates.ExecuteTemplate(w, "register.html", nil)
+		err := templates.ExecuteTemplate(w, "register.html", nil)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -793,7 +793,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		uuidWithHyphen := uuid.New()
 
 		userID := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
-		err = r.ParseForm()
+		err := r.ParseForm()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -831,7 +831,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 				txn.Set([]byte(username), bytes)
 
 				fmt.Println("user registered", user)
-				tempaltes.ExecuteTemplate(w, "register.html", "registration successfule :)")
+				templates.ExecuteTemplate(w, "register.html", "registration successfule :)")
 				return nil
 			} else {
 				bytes, _ := userEntry.ValueCopy(nil)
