@@ -123,7 +123,8 @@
             //var progressBarDiv = document.getElementById("progressBarDiv")
             //var progressBar = document.getElementById("progressBar")
 
-
+            progressBar.innerHTML = data
+            progressBar.style.width = data + "%"
             if (data == 100) {
                 console.log(data)
                 progressBar.innerHTML = data
@@ -141,8 +142,6 @@
                 return
             } else {
                 timeoutID = setTimeout(getUploadStatus, 1000)
-                progressBar.innerHTML = data
-                progressBar.style.width = data + "%"
             }
         } else if (status == 404) {
             //loadingSpinnerRemoved = false

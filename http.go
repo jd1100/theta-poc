@@ -109,6 +109,7 @@ var port *string
 var defaultIPPort string
 var dbPath string
 var dbPath2 string
+var templates *template.Template
 
 //var options = badgerhold.DefaultOptions
 // go-sessions package
@@ -127,18 +128,60 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	//p := mediaSearch{searchString: query, mediaSource: source}
 	//fmt.Println(p.mediaSource, p.searchString)
 
-	rootTemplate, _ := template.ParseFiles("./templates/home.html")
+	//rootTemplate, _ := template.ParseFiles("./templates/home.html")
 	if r.Method == "GET" {
+		//var videos = []UploadedVideo{}
+		var uploadedVideos []UploadedVideo
+		var uploadedVideo UploadedVideo
 
+		db, err := badger.Open(badger.DefaultOptions(dbPath2))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer db.Close()
+		// search for video_ keys and append to uploadedVideos slice
+		err = db.View(func(txn *badger.Txn) error {
+			// Your code here…
+			opts := badger.DefaultIteratorOptions
+			//opts.PrefetchValues = false
+			it := txn.NewIterator(opts)
+			defer it.Close()
+			prefix := []byte("video_")
+			var value []byte
+			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+				videoEntry := it.Item()
+				//k := videoEntry.Key()
+				value, err = videoEntry.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+				json.Unmarshal(value, &uploadedVideo)
+				uploadedVideos = append(uploadedVideos, uploadedVideo)
+			}
+			return nil
+		})
 		// check if user is logged in
 		if sessionManager.Exists(r.Context(), "username") == true {
-			username := sessionManager.GetString(r.Context(), "username")
+			username := sessionManager.Get(r.Context(), "username")
 			//fmt.Fprintf(w, username)
 			fmt.Println("user:", username, "is logged in!")
-			rootTemplate.Execute(w, username)
+			templates.ExecuteTemplate(w, "home.html", username)
 
 		} else {
-			rootTemplate.Execute(w, nil)
+			templates.ExecuteTemplate(w, "home.html", nil)
+		}
+		if err != nil {
+			fmt.Println(err)
+			fmt.Println("error grabbing uploaded videos")
+		} else {
+			uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
+			//fmt.Println(uploadedVideos)
+			err := templates.ExecuteTemplate(w, "home.html", string(uploadedVideosBytes))
+			
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 		fmt.Println("new get request")
 
@@ -146,6 +189,8 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("post requests not allowed")
 	}
 }
+
+
 
 func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 	var newUploadedVideo UploadedVideo
@@ -326,7 +371,6 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 				//fmt.Fprintf(w, "error transcoding video. Please check the api keys and try again")
 				return
 			}
-			fmt.Fprintf(w, videoID)
 			return
 		}()
 		wg.Wait()
@@ -481,7 +525,7 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func listVideosHandler(w http.ResponseWriter, r *http.Request) {
-	templ, _ := template.ParseFiles("./templates/videos_new.html")
+	//templ, _ := template.ParseFiles("./templates/videos_new.html")
 
 	if r.Method == "GET" {
 
@@ -522,7 +566,7 @@ func listVideosHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
 			//fmt.Println(uploadedVideos)
-			err := templ.Execute(w, string(uploadedVideosBytes))
+			err := templates.ExecuteTemplate(w, "home.html", string(uploadedVideosBytes))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -607,24 +651,36 @@ func getUploadStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	loginTemplate, _ := template.ParseFiles("./templates/login.html")
+	//loginTemplate, _ := template.ParseFiles("./templates/login.html")
 	var errorMessage string
 	if r.Method == "GET" {
 		//loginTemplate, _ := template.ParseFiles("./templates/login.html")
-		loginTemplate.Execute(w, nil)
+		//loginTemplate.Execute(w, nil)
+		if value := sessionManager.Get(r.Context(), "username"); value != nil {
+			//templates.ExecuteTemplate(w, "login.html", value)
+			fmt.Println(value, "is already logged in")
+			http.Redirect(w, r, "/", 200)
+			return	
+		}
+		templates.ExecuteTemplate(w, "login.html", nil)
+		return
 	} else if r.Method == "POST" {
 		r.ParseForm()
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-
 		db, err := badger.Open(badger.DefaultOptions(dbPath2))
 
 		if err != nil {
 			fmt.Println(err)
 		}
 		defer db.Close()
-
-		// if the uploadedVideo object doesnt exist, create it
+		fmt.Println(username, password)
+		if username == "" {
+			fmt.Println("username not submitted")
+		}
+		if password == "" {
+			fmt.Println("password not submitted")
+		}
 		err = db.View(func(txn *badger.Txn) error {
 			// Your code here…
 			user := User{}
@@ -633,31 +689,38 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println(err)
 				fmt.Println("username not found")
-				errorMessage = "username not found"
-				fmt.Fprintf(w, errorMessage)
+				errorMessage = "incorrect username or password"
+				//fmt.Fprintf(w, errorMessage)
 				//loginTemplate.Execute(w, "username not found")
+				templates.ExecuteTemplate(w, "login.html", errorMessage)
 				return nil
 			} else {
-
-				var value []byte
 				userByte, err := userEntry.ValueCopy(nil)
 				if err != nil {
 					fmt.Println(err)
 				}
 				_ = json.Unmarshal(userByte, &user)
 				userPassword := user.Password
+				fmt.Println(userPassword)
 
 				err = bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(password))
 				if err != nil {
-					errorMessage = "Incorrect Password"
-					//loginTemplate.Execute(w, "incorrect password")
+					errorMessage = "incorrect username or password"
+					templates.ExecuteTemplate(w, "login.html", errorMessage)
+					return nil
 				} else {
 					fmt.Println("dickmabutt")
 					sessionManager.Put(r.Context(), "username", username)
+		
+					fmt.Println("session cookie for ", username, "added to sessionManager")
 					fmt.Println(user.Password, user.Username, user.ID, user.Email)
-					http.Redirect(w, r, "/", 302)
+					templates.ExecuteTemplate(w, "login.html", user.Username)
+					return nil
+					//http.Redirect(w, r, "/", 301)
+					//loginTemplate.Execute(w, user.Username)
+					//w.Write([]byte(username))
+					//w.WriteHeader(http.StatusOK)
 				}
-				fmt.Println(value)
 			}
 			return nil
 		})
@@ -703,22 +766,25 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	
 	if r.Method == "GET" {
 		if sessionManager.Exists(r.Context(), "username") == true {
 			sessionManager.Destroy(r.Context())
+			fmt.Println("not redirecting")
 			http.Redirect(w, r, "/", 302)
+			return
 		}
-		return
+		http.Redirect(w, r, "/", 302)
+
 	}
-	return
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-	registerTemplate, err := template.ParseFiles("./templates/register.html")
+	//registerTemplate, err := template.ParseFiles("./templates/register.html")
 	//fmt.Println(r.Method)
 	if r.Method == "GET" {
 		//fmt.Println("we're doing it")
-		registerTemplate.Execute(w, nil)
+		templates.ExecuteTemplate(w, "register.html", nil)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -765,13 +831,14 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 				txn.Set([]byte(username), bytes)
 
 				fmt.Println("user registered", user)
+				tempaltes.ExecuteTemplate(w, "register.html", "registration successfule :)")
 				return nil
 			} else {
 				bytes, _ := userEntry.ValueCopy(nil)
 				fmt.Println(bytes)
 				fmt.Println("username already exists")
 
-				registerTemplate.Execute(w, "username already exists")
+				templates.ExecuteTemplate(w, "register.html", "username already exists")
 			}
 			return nil
 		})
@@ -831,10 +898,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	// scs session manager setup
+	// scs session manager setup - cookie store in memory
 	sessionManager = scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 
+	// create temeplate object of all html files
+	templates, _ = template.ParseGlob("templates/*.html")
+	
 	apiID = flag.String("api-id", "", "startup")
 	apiSecret = flag.String("api-secret", "", "startup")
 	ip = flag.String("ip", "localhost", "startup")

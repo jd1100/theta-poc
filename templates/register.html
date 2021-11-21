@@ -1,30 +1,21 @@
 <html>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
+    <head>
+        <link rel='icon' type='image/png' href='static/favicon.png'>
+        <link rel='stylesheet' href='static/build/bundle.css'>
+
+        <script defer src='static/build/bundle.js'></script>
+    </head>
 
 <body>
-    <div>
-        <a href="/">back</a>
-        <h1>Register</h1>
-        <form id="registrationForm" action="http://localhost:8001/register" method="post">
-            username
-            <input id="username" type="text" name="username">
-            {{.}}
-            <br>
-            email
-            <input id="email" type="email" name="email">
-            <br>
-            password
-            <input id="password" type="password" name="password">
-            <br>
-            <input id="submitButton" type="submit">
-        </form>
-    </div>
+    <my-register-form register_message={{.}}></my-register-form>
 </body>
 
 </html>
-<script>
-</script>
+
+<style>
+    body, html {
+         margin: 0;
+         height: 100%;
+    }
+ </style>

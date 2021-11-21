@@ -1,29 +1,24 @@
-{{define "login"}}
+
+
+<!DOCTYPE html>
 <html>
    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel='icon' type='image/png' href='static/favicon.png'>
+      <link rel='stylesheet' href='static/build/bundle.css'>
+ 
+      <script defer src='static/build/bundle.js'></script>
    </head>
 <body>
-   <div>
-      <a href="/">back</a>
-      <h1>Login</h1>
-      {{.}}
-      <form id="loginForm" action="/login" method="post" >
-         username
-         <input id="username" type="text" name="username">
-         <br>
-         password
-         <input id="password" type="password" name="password" >
-         <br>
-         {{.}}
-         <input id="submitButton" type="submit">
-      </form>
-   </div>
-</body>
-</html>
-<script>
-</script>
-{{end}}
 
-{{template "login"}}
+   <my-login username={{.}} ></my-login>
+
+</body>
+
+</html>
+
+<style>
+   html {
+      margin: 0;
+      height: 100%;
+   }
+</style>

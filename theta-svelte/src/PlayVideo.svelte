@@ -1,7 +1,7 @@
 <svelte:options tag="play-video" />
 <svelte:head>
 
-  <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
+
 
   <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
   <script type="application/javascript" src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
@@ -17,29 +17,21 @@
 
 <svelte:window on:load={startApp}></svelte:window>
 <script lang="ts">
-  //import ApexCharts from 'apexcharts'
   export let url: string;
-  //import { Player, Hls } from '@vime/svelte';
-  import { onMount } from "svelte";
-  //import Hls from "hls.js"
-  //import videojs  from 'video.js'
+  export let theta_loader
 
   import "./thetaWebWidget"
-  //import "videojs-contrib-quality-levels";
-  //import "videojs-hls-quality-selector";
-  //import {videojsThetaPlugin} from "./js/videojs-theta-plugin.js"
-  //import theta from "./js/theta.js";
- 
+
+
   console.log({ url });
   ///////////////////
   var player
-  var hlsPlayer
-  var videoSrc
   var theta 
   var thetaWidgetPlaceholder
   var videoID = url.replace(/https:\/\/media.thetavideoapi.com\//, "")
   videoID = videoID.replace(/\/master.m3u8/, "")
-  console.log(videoID) 
+  console.log(videoID)
+
   const optionalHlsOpts = null;
   const optionalThetaOpts = {
     allowRangeRequests: true, // false if cdn does not support range headers  
@@ -253,9 +245,7 @@
   */
 </script>
 <main>
-  <a href="/videos">back</a>
-  <hr>
-  <a href="/">home</a>
+  <my-header></my-header>
   <!-- Notice we turned off controls? We're supplying our own, so we hide the native ones. -->
 
   
@@ -269,24 +259,30 @@
       <source bind:this={videoSrc} type="application/x-mpegURL" />
     </vm-hls>
   </vm-player>-->
+<div class="container mx-auto">
+  <div>
+    <div class="p-4">
+      <div class="justify-center aspect-w-16 aspect-h-9">
+        <video bind:this={player} controls>
+          <track kind="captions">
+        </video>
+      </div>
+    </div>
+    <section id="content" class="p-4">
+      <!-- Optional - For Theta Web Widget -->
   
-  <div class="justify-center flex relative aspect-w-16 aspect-h-9">
-    <video bind:this={player} controls>
-      <track kind="captions">
-    </video>
+      <div bind:this={thetaWidgetPlaceholder} id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
+  
+      <!--<iframe title="thetaWidget" src="https://theta-web-widgets.thetatoken.org/widgets/overview-with-traffic-chart?theme=light&widget-id=p72j6mf30&show-tfuel-help-button=false&main-message=%20&language=en&show-gamma-help-button=false" style="width: 100%; height: 268px;" scrolling="no" frameborder="0"></iframe>-->
+    </section>
   </div>
-  <section id="content">
-    <!-- Optional - For Theta Web Widget -->
-
-    <div bind:this={thetaWidgetPlaceholder} id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
-
-    <!--<iframe title="thetaWidget" src="https://theta-web-widgets.thetatoken.org/widgets/overview-with-traffic-chart?theme=light&widget-id=p72j6mf30&show-tfuel-help-button=false&main-message=%20&language=en&show-gamma-help-button=false" style="width: 100%; height: 268px;" scrolling="no" frameborder="0"></iframe>-->
-  </section>
+</div>
+  <my-footer></my-footer>
 </main>
 
 <style>
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 </style>

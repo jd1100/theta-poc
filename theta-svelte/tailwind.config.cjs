@@ -4,8 +4,19 @@ module.exports = {
   mode: 'jit',
   purge: ['./src/**/*.svelte'],
   plugins: [
-    require('daisyui'),
-    require('@themesberg/flowbite/plugin'),
-    require("@tailwindcss/aspect-ratio")
-  ]
+    require('@tailwindcss/typography'),
+    require("@tailwindcss/aspect-ratio"),
+    require('daisyui')
+  ],
+  // config (optional)
+  daisyui: {
+    styled: true,
+    themes: [
+      'dark'
+    ],
+    base: true,
+    utils: true,
+    logs: true,
+    rtl: false,
+  },
  }

@@ -56,6 +56,7 @@ export default {
 				customElement: true
 			},
 		}),
+		//css({ output: 'public/build/bundle.css' }),
 		legacy({
 			"src/thetaWebWidget.js": "ThetaWebWidgets"
 		}),
