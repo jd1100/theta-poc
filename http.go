@@ -133,7 +133,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		//var videos = []UploadedVideo{}
 		var uploadedVideos []UploadedVideo
 		var uploadedVideo UploadedVideo
-
 		db, err := badger.Open(badger.DefaultOptions(dbPath2))
 
 		if err != nil {
@@ -161,6 +160,9 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return nil
 		})
+		if err != nil {
+			panic(err)
+		}
 		// check if user is logged in
 		if sessionManager.Exists(r.Context(), "username") == true {
 			username := sessionManager.Get(r.Context(), "username")
@@ -174,14 +176,13 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println(err)
 			fmt.Println("error grabbing uploaded videos")
-		} else {
-			uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
-			//fmt.Println(uploadedVideos)
-			err := templates.ExecuteTemplate(w, "home.html", string(uploadedVideosBytes))
-			
-			if err != nil {
-				fmt.Println(err)
-			}
+		}
+		uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
+		//fmt.Println(uploadedVideos)
+		err = templates.ExecuteTemplate(w, "home.html", string(uploadedVideosBytes))
+		
+		if err != nil {
+			fmt.Println(err)
 		}
 		fmt.Println("new get request")
 
@@ -414,6 +415,8 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			body, err := ioutil.ReadAll(res.Body)
 			err = json.Unmarshal(body, &transcodeVideoResponse2)
 
+			transcodeVideoResponseBytes := json.Marshal(transcodeVideoResponse2)
+
 			progress2 = transcodeVideoResponse2.Body.Videos[0].Progress
 			playbackURI2 = transcodeVideoResponse2.Body.Videos[0].PlaybackURI
 			state2 = transcodeVideoResponse2.Body.Videos[0].State
@@ -460,7 +463,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 						}
 						db.Insert(videoID, &newUploadedVideo)
 					*/
-					db, err := badger.Open(badger.DefaultOptions(dbPath2))
+					db, err := badger.Open(badger.DefaultOptions(dbPath2).WithSyncWrites(true))
 
 					if err != nil {
 						fmt.Println(err)
@@ -484,6 +487,7 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 							var value []byte
 							value, err = videoEntry.ValueCopy(nil)
 							fmt.Println(value)
+							return nil
 						}
 						return nil
 					})
@@ -517,11 +521,49 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 	reqVideoID := strings.TrimPrefix(r.URL.Path, "/playVideo/")
 
 	uri := halfURI + reqVideoID + endURI
-	t, _ := template.ParseFiles("./templates/playVideo_new.html")
+	//t, _ := template.ParseFiles("./templates/playVideo_new.html")
+
 	if r.Method == "GET" {
+		
+		
+		
 		fmt.Println("new get request to play video")
 		fmt.Println(uri)
-		t.Execute(w, uri)
+		
+		var uploadedVideos []UploadedVideo
+		var uploadedVideo UploadedVideo
+		db, err := badger.Open(badger.DefaultOptions(dbPath2).WithReadOnly(true))
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer db.Close()
+		// search for video_ keys and append to uploadedVideos slice
+		err = db.View(func(txn *badger.Txn) error {
+			// Your code here…
+			opts := badger.DefaultIteratorOptions
+			//opts.PrefetchValues = false
+			it := txn.NewIterator(opts)
+			defer it.Close()
+			prefix := []byte("video_")
+			var value []byte
+			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+				videoEntry := it.Item()
+				//k := videoEntry.Key()
+				value, err = videoEntry.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+				json.Unmarshal(value, &uploadedVideo)
+				uploadedVideos = append(uploadedVideos, uploadedVideo)
+			}
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+		uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
+		templates.ExecuteTemplate(w, "playVideo_new.html", string(uploadedVideosBytes))
 	}
 }
 func listVideosHandler(w http.ResponseWriter, r *http.Request) {
@@ -533,7 +575,7 @@ func listVideosHandler(w http.ResponseWriter, r *http.Request) {
 		var uploadedVideos []UploadedVideo
 		var uploadedVideo UploadedVideo
 
-		db, err := badger.Open(badger.DefaultOptions(dbPath2))
+		db, err := badger.Open(badger.DefaultOptions(dbPath2).WithReadOnly(true))
 
 		if err != nil {
 			fmt.Println(err)
@@ -659,7 +701,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		if value := sessionManager.Get(r.Context(), "username"); value != nil {
 			//templates.ExecuteTemplate(w, "login.html", value)
 			fmt.Println(value, "is already logged in")
-			http.Redirect(w, r, "/", 200)
+			templates.ExecuteTemplate(w, "login.html", value)
 			return	
 		}
 		templates.ExecuteTemplate(w, "login.html", nil)
@@ -668,18 +710,10 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		username := r.FormValue("username")
 		password := r.FormValue("password")
-		db, err := badger.Open(badger.DefaultOptions(dbPath2))
-
+		db, err := badger.Open(badger.DefaultOptions(dbPath2).WithReadOnly(true))
+		defer db.Close()
 		if err != nil {
 			fmt.Println(err)
-		}
-		defer db.Close()
-		fmt.Println(username, password)
-		if username == "" {
-			fmt.Println("username not submitted")
-		}
-		if password == "" {
-			fmt.Println("password not submitted")
 		}
 		err = db.View(func(txn *badger.Txn) error {
 			// Your code here…
@@ -693,29 +727,31 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				//fmt.Fprintf(w, errorMessage)
 				//loginTemplate.Execute(w, "username not found")
 				templates.ExecuteTemplate(w, "login.html", errorMessage)
-				return nil
 			} else {
 				userByte, err := userEntry.ValueCopy(nil)
 				if err != nil {
 					fmt.Println(err)
 				}
-				_ = json.Unmarshal(userByte, &user)
-				userPassword := user.Password
-				fmt.Println(userPassword)
+				err = json.Unmarshal(userByte, &user)
+				if err != nil {
+					fmt.Println(err)
+				}
+				userHash := user.Password
+				fmt.Println("stored hash for", username, ":", userHash)
 
-				err = bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(password))
+				err = bcrypt.CompareHashAndPassword([]byte(userHash), []byte(password))
+				fmt.Println(err)
 				if err != nil {
 					errorMessage = "incorrect username or password"
+					fmt.Println(errorMessage)
 					templates.ExecuteTemplate(w, "login.html", errorMessage)
-					return nil
 				} else {
 					fmt.Println("dickmabutt")
 					sessionManager.Put(r.Context(), "username", username)
 		
 					fmt.Println("session cookie for ", username, "added to sessionManager")
 					fmt.Println(user.Password, user.Username, user.ID, user.Email)
-					templates.ExecuteTemplate(w, "login.html", user.Username)
-					return nil
+					templates.ExecuteTemplate(w, "login.html", username)
 					//http.Redirect(w, r, "/", 301)
 					//loginTemplate.Execute(w, user.Username)
 					//w.Write([]byte(username))
@@ -801,6 +837,9 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 		fmt.Println("new sign in for: ", username)
+		if password == "" {
+			fmt.Println("empty password")
+		}
 
 		db, err := badger.Open(badger.DefaultOptions(dbPath2))
 		if err != nil {
@@ -812,6 +851,8 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			userEntry, err := txn.Get([]byte(username))
 			if err != nil {
 				passwordHashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+				
+				fmt.Println("new user registered!", username, email, string(passwordHashed))
 				if err != nil {
 					log.Println(err)
 				}

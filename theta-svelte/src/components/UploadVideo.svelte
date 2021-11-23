@@ -1,23 +1,11 @@
 <svelte:options tag="upload-video" />
 
 <script>
-    //import GUN from 'gun'
-    //import 'gun/sea'
-    //import 'gun/axe'
     //import { onMount } from 'svelte';
-    
-    console.log("we're doing it")
-    /*
-    var testButton = document.getElementById("testButton")
-    testButton.addEventListener("click", event => {
-        getUploadStatus()
-    })
-    */
+
     export let newUploadedVideo;
-    //export const db = GUN();
     var videoUpload;
 
-    var file
     var fileLength
     var videoID = ""
     var timeoutID
@@ -26,11 +14,9 @@
     var buttonDiv
     var loadingSpinnerDiv
     var loadingSpinner
-    var thumbnail
     var videoName
     var uploadForm
     var buttonElement
-    var file
     var progressBar
     var progressBarDiv
     var progressBarActive = false
@@ -120,11 +106,10 @@
                 loadingSpinnerActive = false
                 progressBarActive = true
             }
+
             //var progressBarDiv = document.getElementById("progressBarDiv")
             //var progressBar = document.getElementById("progressBar")
 
-            progressBar.innerHTML = data
-            progressBar.style.width = data + "%"
             if (data == 100) {
                 console.log(data)
                 progressBar.innerHTML = data
@@ -141,7 +126,10 @@
                 window.location = "/videos"
                 return
             } else {
+                progressBar.innerHTML = data
+                progressBar.style.width = data + "%"
                 timeoutID = setTimeout(getUploadStatus, 1000)
+
             }
         } else if (status == 404) {
             //loadingSpinnerRemoved = false
@@ -152,6 +140,8 @@
         }
 
     }
+    // wack attempt to create thumbnail of a video using javascript. Only works for short vids lol
+    /*
     function createThumbnail(event) {
         if (thumbnail != null) {
             thumbnail.remove()
@@ -210,13 +200,14 @@
             };
             fileReader.readAsArrayBuffer(file);
         }
+        
     }
+    */
 </script>
 
 <main>
-<div class="bg-gradient-to-b from-gray-900 via-purple-900 to-violet-600 relative">
-        
-
+<my-header></my-header>
+<div class="relative">    
     <div
       class="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-no-repeat bg-cover relative items-center">
 
@@ -229,39 +220,22 @@
          </div>
         <iframe title="" name="frame" style="display:none"></iframe>
         <form bind:this={uploadForm} class="mt-8 space-y-3" target="frame">
-            <div class="grid grid-cols-1 space-y-2">
+            <div class="grid grid-cols-2 space-y-2">
                <!-- svelte-ignore a11y-label-has-associated-control -->
-                <label for="videoName" class="text-sm font-bold text-gray-500 tracking-wide">Video Name<label>
-                <input bind:this={videoName} name="videoName" class="text-base p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"
-                    type="text">
+                <label for="videoName" class="text-sm font-bold text-base-200 tracking-wide">Video Name<label>
+                <br>
+                <input bind:this={videoName} name="videoName" class="text-base-100 p-2 border border-accent-focus rounded-lg focus:outline-none focus:border-primary-focus"
+                type="text">
             </div>
 
             <div class="grid grid-cols-1 space-y-2">
-                <label for="file" class="text-sm font-bold text-gray-500 tracking-wide">Thumbnail</label>
-                <input bind:this={thumbnailUpload} type="file" name="thumbnailFile">
+                <label for="file" class="text-sm font-bold text-base-200 tracking-wide">Thumbnail</label>
+                <input class="text-base-300" bind:this={thumbnailUpload} type="file" name="thumbnailFile">
             </div>
             <div class="grid grid-cols-1 space-y-2">
-
-                <label for="file" class="text-sm font-bold text-gray-500 tracking-wide">Video File</label>
-                <div class="flex items-center justify-center w-full">
-                    <label class="flex flex-col rounded-lg border-4 border-dashed w-full h-60 p-10 group text-center">
-                        <div class="h-full w-full text-center flex flex-col items-center justify-center items-center  ">
-                        <div bind:this={thumbnail} class="flex flex-auto max-h-48 w-2/5 mx-auto -mt-10">
-
-                        </div>
-                        <p class="pointer-none text-gray-500 "><span class="text-sm">Drag and drop</span> files here
-                            <br />
-                            or <a href="_blank" id="" class="text-blue-600 hover:underline">select a file</a> from your
-                            computer
-                        </p>
-                        </div>
-                        <input bind:this={videoUpload} on:change={createThumbnail} type="file" name="video_file" class="hidden">
-                    </label>
-                </div>
+                <label for="file" class="text-sm font-bold text-base-200 tracking-wide">Video File</label>
+                <input class="text-base-300" bind:this={videoUpload} type="file" name="video_file">
             </div>
-            <p class="text-sm text-gray-300">
-                <span>File type: mp4</span>
-            </p>
             {#if loadingSpinnerActive} 
                 <div bind:this={loadingSpinnerDiv} class="flex items-center justify-center">
                     <div bind:this={loadingSpinner} class="w-16 h-16 border-b-2 border-gray-900 rounded-full animate-spin"></div>
@@ -269,15 +243,15 @@
             {/if}
             {#if progressBarActive}
                 <div bind:this={progressBarDiv} class="w-full bg-gray-200 rounded-full">
-                    <div bind:this={progressBar} class="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"></div>
+                    <div bind:this={progressBar} class="bg-primary text-xs font-medium bg-primary-focused text-center p-0.5 leading-none rounded-full"></div>
                 </div>
             {/if}
             {#if buttonActive}
                 <div bind:this={buttonDiv}>
                     <button bind:this={buttonElement}
                         on:click={submitForm}
-                        class="my-5 w-full flex justify-center bg-blue-500 text-gray-100 p-4  rounded-full tracking-wide
-                        font-semibold  focus:outline-none focus:shadow-outline hover:bg-blue-600 shadow-lg cursor-pointer transition ease-in duration-300">
+                        class="my-5 w-full flex justify-center bg-primary bg-base-100 p-4 rounded-full tracking-wide
+                        font-semibold  focus:outline-none focus:shadow-outline hover:bg-primary-focus shadow-lg cursor-pointer transition ease-in duration-300">
                         Upload
                     </button>
                 </div>
@@ -286,14 +260,11 @@
       </div>
    </div>
 </div>
+<my-footer></my-footer>
 </main>
 
 <style>
-    @tailwind base;
-    @tailwind components;
-    @tailwind utilities;
-    .has-mask {
-      position: absolute;
-      clip: rect(10px, 150px, 130px, 10px);
-   }
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 </style>

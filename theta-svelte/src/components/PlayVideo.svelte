@@ -17,27 +17,42 @@
 
 <svelte:window on:load={startApp}></svelte:window>
 <script lang="ts">
-  export let url: string;
-  export let theta_loader
+  export let videos
 
-  import "./thetaWebWidget"
+  import { currentVideoID } from './stores';
+  import "../theta/thetaWebWidget";
 
 
-  console.log({ url });
+  //console.log({ url });
   ///////////////////
   var player
   var theta 
   var thetaWidgetPlaceholder
-  var videoID = url.replace(/https:\/\/media.thetavideoapi.com\//, "")
-  videoID = videoID.replace(/\/master.m3u8/, "")
-  console.log(videoID)
+  var videoID
+  var url
+  var thumbnailElement
+  var titleElement
+  var videoData
 
+  //var videoID = url.replace(/https:\/\/media.thetavideoapi.com\//, "")
+  //videoID = videoID.replace(/\/master.m3u8/, "")
+  //console.log(videoID)
+
+  videoID = $currentVideoID
+  url = "https://media.thetavideoapi.com/" + $currentVideoID + "/master.m3u8"
+  
+  videoData = JSON.parse(videos)
+  console.log(videos)
+  
   const optionalHlsOpts = null;
   const optionalThetaOpts = {
     allowRangeRequests: true, // false if cdn does not support range headers  
   };
 
 
+  console.log(videos)
+  console.log(videoID)
+  console.log(url)
   console.log("ayo wasup den")
   console.log("wasup den")
   const PEER_SERVER_HOST = "prod-theta-peerjs.thetatoken.org";
@@ -244,8 +259,8 @@
   })
   */
 </script>
+<my-header></my-header>
 <main>
-  <my-header></my-header>
   <!-- Notice we turned off controls? We're supplying our own, so we hide the native ones. -->
 
   
@@ -259,10 +274,10 @@
       <source bind:this={videoSrc} type="application/x-mpegURL" />
     </vm-hls>
   </vm-player>-->
-<div class="container mx-auto">
-  <div>
+<div class="md:flex md:flex-col lg:grid lg:grid-cols-6 lg:auto-cols-auto justify-evenly">
+  <div class="flex flex-col col-span-5">
     <div class="p-4">
-      <div class="justify-center aspect-w-16 aspect-h-9">
+      <div class="aspect-w-16 aspect-h-9">
         <video bind:this={player} controls>
           <track kind="captions">
         </video>
@@ -276,9 +291,40 @@
       <!--<iframe title="thetaWidget" src="https://theta-web-widgets.thetatoken.org/widgets/overview-with-traffic-chart?theme=light&widget-id=p72j6mf30&show-tfuel-help-button=false&main-message=%20&language=en&show-gamma-help-button=false" style="width: 100%; height: 268px;" scrolling="no" frameborder="0"></iframe>-->
     </section>
   </div>
+  <div class="px-5 mx-auto col-span-1">
+    <!-- svelte-ignore empty-block -->
+    <div class="grid-col-1">
+    {#each videoData as video, i}
+        
+        <div class="h-auto w-auto p-4">
+            
+            <div class="mt-4">
+                <a bind:this={thumbnailElement} class="block relative h-48 rounded overflow-hidden" href="/playVideo/{video.Video["id"]}" on:click={ () => currentVideoID.set(video.Video["id"])}>
+                    <img alt="ecommerce" class="object-cover object-center w-full h-full block" src="data:image/jpg;base64,{video["thumbnail"]}">
+                </a>
+                <h2 class="text-primary-content title-font tracking-widest mb-1 break-words"><a bind:this={titleElement} on:click={() => currentVideoID.set(video.Video["id"])} href="/playVideo/{video.Video["id"]}">{video["videoName"]}</a></h2>
+                <h3 class="prose-base-content text-sm tracking-widest"><a href="_blank">{video["username"]}</a></h3>
+                <p class="mt-1">{i}</p>
+            </div>
+        </div>
+        <!--
+            // pagination
+
+            {#if i == numberOfVideosDisplayedPerPage}
+                // grab next page - call a function that makes 
+                post request with a url variable that is an increment
+                of the current page number varibale
+                TODO: create page variable 
+
+                {grabNextPage}
+
+            {/if}
+        -->
+    {/each}
+    </div>
 </div>
-  <my-footer></my-footer>
 </main>
+<my-footer></my-footer>
 
 <style>
 @import "tailwindcss/base";

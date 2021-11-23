@@ -2,7 +2,7 @@
 <svelte:options tag="my-header" />
 
 <script lang="ts">
-    import { user } from "../stores.js"
+    import { user } from "./stores.js"
     //export let name
     //var value
     
@@ -51,14 +51,18 @@
         </div>
         {#if $user}
         <div class="flex-none">
-            <button class="btn btn-ghost">
-                <span class="text-lg font-bold"><a href="/upload">upload</a></span>
+          <a href="/upload">
+            <button class="btn btn-ghost text-lg font-bold">
+              upload
             </button>
+          </a>
         </div>
         <div class="flex-none">
-            <button class="btn btn-ghost" on:click={logout}>
-                <span class="text-lg font-bold"><a href="/logout">logout</a></span>
+          <a href="/logout">
+            <button class="btn btn-ghost text-lg font-bold" on:click={logout}>
+                logout
             </button>
+          <a href="/logout">
         </div>
         <div class="flex-none">
           <button class="btn btn-ghost">
@@ -76,14 +80,18 @@
         </div>
         {:else}
         <div class="flex-none">
-            <button class="btn btn-ghost">
-                <span class="text-lg font-bold"><a href="/login">login</a></span>
+          <a href="/login">
+            <button class="btn btn-ghost text-lg font-bold">
+                login
             </button>
+          </a>
         </div>
         <div class="flex-none">
-            <button class="btn btn-ghost">
-                <span class="text-lg font-bold"><a href="/register">register</a></span>
+          <a href="/register">
+            <button class="btn btn-ghost text-lg font-bold">
+                register
             </button>
+          </a>
         </div>
         {/if}
       </div>

@@ -1,16 +1,14 @@
 //import "https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js";
-import './Home.svelte';
-import './PlayVideo.svelte';
-import './UploadVideo.svelte';
-import './Videos.svelte';
-import './playVideo_test.svelte';
-import "./components/header.svelte"
-import "./components/footer.svelte"
-import "./components/login.svelte"
-import "./stores.js"
-import "./css/tailwind.css"
-import "./components/Register.svelte"
-import "components/thetaPlayer.svelte"
+import './components/Home.svelte';
+import './components/PlayVideo.svelte';
+import './components/UploadVideo.svelte';
+import './components/Videos.svelte';
+import "./components/header.svelte";
+import "./components/footer.svelte";
+import "./components/login.svelte";
+import "./components/Register.svelte";
+import "./components/stores.js";
+import "./css/tailwind.css";
 
 // Default theme. ~960B
 //import '@vime/core/themes/default.css';

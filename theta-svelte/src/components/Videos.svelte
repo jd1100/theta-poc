@@ -1,9 +1,7 @@
 <svelte:options tag="list-videos"></svelte:options>
 <script lang="ts">
     // imports
-    import "./css/tailwind.css"
-    import { user } from "./stores.js";
-    import { onMount } from "svelte";
+    import { currentVideoID } from "./stores"
     
     // exports
     export let videos;
@@ -13,21 +11,28 @@
     var videoData = JSON.parse(videos)
     console.log(videoData)
     var b64JPG = "data:image/jpg;base64,"
+    var thumbnailElement
+    var titleElement
+
+
 
 </script> 
 <my-header></my-header>
 <section class="body-font h-auto w-auto">
     <div class="container px-5 py-24 mx-auto">
+        {#if !videoData}
+        no videos uploaded... <a href="/upload"> yet!</a> 
+        {:else}
         <div class="flex flex-wrap -m-4">
         {#each videoData as video, i}
             
             <div class="lg:w-1/4 md:w-1/2 p-4 w-full">
                 
                 <div class="mt-4">
-                    <a class="block relative h-48 rounded overflow-hidden" href="/playVideo/{video.Video["id"]}">
+                    <a bind:this={thumbnailElement} class="block relative h-48 rounded overflow-hidden" href="/playVideo/{video.Video["id"]}" on:click={ () => currentVideoID.set(video.Video["id"])}>
                         <img alt="ecommerce" class="object-cover object-center w-full h-full block" src="data:image/jpg;base64,{video["thumbnail"]}">
                     </a>
-                    <h2 class="text-primary-content title-font tracking-widest mb-1 break-words"><a href="/playVideo/{video.Video["id"]}">{video["videoName"]}</a></h2>
+                    <h2 class="text-primary-content title-font tracking-widest mb-1 break-words"><a bind:this={titleElement} on:click={() => currentVideoID.set(video.Video["id"])} href="/playVideo/{video.Video["id"]}">{video["videoName"]}</a></h2>
                     <h3 class="prose-base-content text-sm tracking-widest"><a href="_blank">{video["username"]}</a></h3>
                     <p class="mt-1">{i}</p>
                 </div>
@@ -47,6 +52,7 @@
             -->
         {/each}
         </div>
+        {/if}
         <div class="flex justify-center mt-110 space-x-1">
             <button class="flex items-center justify-center h-8 w-8 rounded text-gray-400">
                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">

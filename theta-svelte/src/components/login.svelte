@@ -2,7 +2,7 @@
 <svelte:options tag="my-login"></svelte:options>
 
 <script lang="ts">
-    import { user } from "../stores";
+    import { user } from "./stores";
     import { onMount } from "svelte";
     export let username: string;
     var formElement
@@ -19,7 +19,7 @@
             user.set(username)
             console.log("user store = ", $user)
         }
-        //location.href = "/"
+        location.href = "/"
     } else {
         console.log("user not logged in")
         user.set('')
@@ -44,7 +44,7 @@
         <label class="font-semibold text-xs" for="username">Username or Email</label>
         <input bind:value={usernameField} name="username" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2" type="text" required>
         <label class="font-semibold text-xs mt-3" for="password">Password</label>
-        <input bind:value={passwordField} name="password" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2"type="password" required>
+        <input bind:value={passwordField} name="password" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2" type="password" required>
         <button type="submit" class="flex items-center justify-center h-12 px-6 w-64 bg-blue-600 mt-16 rounded font-semibold text-sm text-blue-100 hover:bg-blue-700">Login</button>
         <div class="flex mt-6 justify-center text-xs">
             <a class="text-blue-400 hover:text-blue-500" href="_blank">Forgot Password</a>

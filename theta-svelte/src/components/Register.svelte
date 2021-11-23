@@ -21,8 +21,8 @@
         <label class="font-semibold text-xs mt-3" for="email">Email</label>
         <input name="email" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2" type="email" required>
         <label class="font-semibold text-xs mt-3" for="email">Password</label>
-        <input name="email" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2" type="password" required>
-        <button class="flex items-center justify-center h-12 px-6 w-64 bg-blue-600 mt-16 rounded font-semibold text-sm text-blue-100 hover:bg-blue-700">Login</button>
+        <input name="password" class="flex items-center h-12 px-4 w-64 bg-gray-200 mt-4 rounded focus:outline-none focus:ring-2" type="password" required>
+        <button class="flex items-center justify-center h-12 px-6 w-64 bg-blue-600 mt-16 rounded font-semibold text-sm text-blue-100 hover:bg-blue-700">Register</button>
         <div class="flex mt-6 justify-center text-xs">
             <a class="text-blue-400 hover:text-blue-500" href="/login">Sign In</a>
         </div>
