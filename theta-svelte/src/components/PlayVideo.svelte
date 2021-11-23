@@ -56,13 +56,9 @@
   console.log("ayo wasup den")
   console.log("wasup den")
   const PEER_SERVER_HOST = "prod-theta-peerjs.thetatoken.org";
-  //const PEER_SERVER_HOST = "localhost";
   const PEER_SERVER_PORT = 8700;
-  //const PEER_SERVER_PORT = 9000;
   const TRACKER_SERVER_HOST = "prod-testnet-grouping.thetatoken.org";
-  //const TRACKER_SERVER_HOST = "localhost";
   const TRACKER_SERVER_PORT = 8700;
-  //const TRACKER_SERVER_PORT = 9000;
 
   //const PLATFORM_THETA_WALLET_SERVICE_URL = "http://localhost:3000";
 

@@ -180,7 +180,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		uploadedVideosBytes, _ := json.Marshal(uploadedVideos)
 		//fmt.Println(uploadedVideos)
 		err = templates.ExecuteTemplate(w, "home.html", string(uploadedVideosBytes))
-		
+
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -190,8 +190,6 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("post requests not allowed")
 	}
 }
-
-
 
 func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 	var newUploadedVideo UploadedVideo
@@ -415,8 +413,6 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			body, err := ioutil.ReadAll(res.Body)
 			err = json.Unmarshal(body, &transcodeVideoResponse2)
 
-			transcodeVideoResponseBytes := json.Marshal(transcodeVideoResponse2)
-
 			progress2 = transcodeVideoResponse2.Body.Videos[0].Progress
 			playbackURI2 = transcodeVideoResponse2.Body.Videos[0].PlaybackURI
 			state2 = transcodeVideoResponse2.Body.Videos[0].State
@@ -524,12 +520,10 @@ func playVideoHandler(w http.ResponseWriter, r *http.Request) {
 	//t, _ := template.ParseFiles("./templates/playVideo_new.html")
 
 	if r.Method == "GET" {
-		
-		
-		
+
 		fmt.Println("new get request to play video")
 		fmt.Println(uri)
-		
+
 		var uploadedVideos []UploadedVideo
 		var uploadedVideo UploadedVideo
 		db, err := badger.Open(badger.DefaultOptions(dbPath2).WithReadOnly(true))
@@ -702,7 +696,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			//templates.ExecuteTemplate(w, "login.html", value)
 			fmt.Println(value, "is already logged in")
 			templates.ExecuteTemplate(w, "login.html", value)
-			return	
+			return
 		}
 		templates.ExecuteTemplate(w, "login.html", nil)
 		return
@@ -748,7 +742,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					fmt.Println("dickmabutt")
 					sessionManager.Put(r.Context(), "username", username)
-		
+
 					fmt.Println("session cookie for ", username, "added to sessionManager")
 					fmt.Println(user.Password, user.Username, user.ID, user.Email)
 					templates.ExecuteTemplate(w, "login.html", username)
@@ -802,7 +796,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	
+
 	if r.Method == "GET" {
 		if sessionManager.Exists(r.Context(), "username") == true {
 			sessionManager.Destroy(r.Context())
@@ -851,7 +845,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 			userEntry, err := txn.Get([]byte(username))
 			if err != nil {
 				passwordHashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-				
+
 				fmt.Println("new user registered!", username, email, string(passwordHashed))
 				if err != nil {
 					log.Println(err)
@@ -948,10 +942,10 @@ func main() {
 
 	// create temeplate object of all html files
 	templates, _ = template.ParseGlob("templates/*.html")
-	
+
 	apiID = flag.String("api-id", "", "startup")
 	apiSecret = flag.String("api-secret", "", "startup")
-	ip = flag.String("ip", "localhost", "startup")
+	ip = flag.String("ip", "", "startup")
 	port = flag.String("port", "8001", "startup")
 	dbPathInit := flag.String("db-path", "/tmp/db", "startup")
 	flag.Parse()

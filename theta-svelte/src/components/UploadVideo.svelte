@@ -47,7 +47,7 @@
     */
     console.log(newUploadedVideo)
     async function uploadFormData() {
-        let response = await fetch("http://localhost:8001/upload", {
+        let response = await fetch("/upload", {
             method: "POST",
             //jsonData: content.join(''),
             body: formData
@@ -95,7 +95,7 @@
     }
 
     async function getUploadStatus() {
-        const response = await fetch("http://localhost:8001/getUploadStatus/" + videoID);
+        const response = await fetch("/getUploadStatus/" + videoID);
         const status = await response.status
         const data = await response.text();
 
