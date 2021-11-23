@@ -4,12 +4,13 @@
 
 <!--
   <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
-  <script type="application/javascript" src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
-  <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
+  <script src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
+  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
 
-  <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta-hls-plugin.umd.js"></script>
-  <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/videojs-theta-plugin.min.js"></script>
--->  
+  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta-hls-plugin.umd.js"></script>
+  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/videojs-theta-plugin.min.js"></script>
+-->
   <!--<script src="//cdn.jsdelivr.net/npm/cdnbye@latest"></script>-->
   <!-- Optional - Include Theta Web Widget -->
   <!--<script type="application/javascript" src="https://theta-web-widgets.thetatoken.org/js/ThetaWebWidgets.js"></script>-->
@@ -19,6 +20,10 @@
 <script lang="ts">
   export let videos
 
+  //import "../theta/theta";
+  //import "../theta/theta-hls-plugin"
+  //import "../theta/theta-videojs-plugin.js"
+  
   import { currentVideoID } from './stores';
   import "../theta/thetaWebWidget";
 

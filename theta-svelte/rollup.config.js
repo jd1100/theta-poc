@@ -26,22 +26,14 @@ const production = !process.env.ROLLUP_WATCH;
 
 export default {
 	input: 'src/index.ts',
-	//external: ["ThetaWebWidgets"],
 	output: {
-		
-		globals: {
-			"ThetaWebWidgets": "ThetaWebWidgets"
-		},
-		
 		sourcemap: true,
 		format: 'umd',
 		name: 'app',
 		file: 'public/build/bundle.js',
-		paths: {
-			"ThetaWebWidgets": "./src/ThetaWebWidgets.js"
-		}
 	},
 	plugins: [
+		//rollupImportMapPlugin('src/import-map.json'),
 		postcss({
             extract: "base.css",
 			minimize: true,
@@ -76,7 +68,9 @@ export default {
 			browser: true
 		}),
 		
-		commonjs(),
+		commonjs({
+			include: [".cjs", ".js"]
+		}),
 		
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated
