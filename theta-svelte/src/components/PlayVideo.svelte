@@ -2,14 +2,14 @@
 <svelte:head>
 
 
-
+<!--
   <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
   <script type="application/javascript" src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
   <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
 
   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta-hls-plugin.umd.js"></script>
   <script type="application/javascript" src="https://d1ktbyo67sh8fw.cloudfront.net/js/videojs-theta-plugin.min.js"></script>
-  
+-->  
   <!--<script src="//cdn.jsdelivr.net/npm/cdnbye@latest"></script>-->
   <!-- Optional - Include Theta Web Widget -->
   <!--<script type="application/javascript" src="https://theta-web-widgets.thetatoken.org/js/ThetaWebWidgets.js"></script>-->
