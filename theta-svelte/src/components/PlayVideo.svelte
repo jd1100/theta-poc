@@ -20,9 +20,9 @@
 <script lang="ts">
   export let videos
 
-  //import "../theta/theta";
-  //import "../theta/theta-hls-plugin"
-  //import "../theta/theta-videojs-plugin.js"
+  import "../theta/theta";
+  import "../theta/theta-hls-plugin"
+  import "../theta/theta-videojs-plugin.js"
   
   import { currentVideoID } from './stores';
   import "../theta/thetaWebWidget";
