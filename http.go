@@ -319,11 +319,10 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			req.Header.Add("Content-Type", "application/octet-stream")
 
 			res, err = client.Do(req)
-			bb, err := io.ReadAll(res.Body)
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println(string(bb))
+			//fmt.Println(string(bb))
 			defer res.Body.Close()
 			//fmt.Println(res)
 
@@ -345,7 +344,6 @@ func videoUploadHandler(w http.ResponseWriter, r *http.Request) {
 			res, err = client.Do(req)
 			//bb, err = io.ReadAll(res.Body)
 			fmt.Println("send request to transcode video upload")
-			fmt.Println(string(bb))
 			if err != nil {
 				fmt.Println(err)
 			}

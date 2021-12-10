@@ -1,32 +1,27 @@
 <svelte:options tag="play-video" />
 <svelte:head>
-
-
-<!--
-  <link href="https://vjs.zencdn.net/7.10.2/video-js.min.css" rel="stylesheet" />
-  <script src='https://vjs.zencdn.net/7.10.2/video.min.js'></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@0.12.4"></script>
-  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta.umd.js"></script>
-
-  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/theta-hls-plugin.umd.js"></script>
-  <script src="https://d1ktbyo67sh8fw.cloudfront.net/js/videojs-theta-plugin.min.js"></script>
--->
-  <!--<script src="//cdn.jsdelivr.net/npm/cdnbye@latest"></script>-->
-  <!-- Optional - Include Theta Web Widget -->
-  <!--<script type="application/javascript" src="https://theta-web-widgets.thetatoken.org/js/ThetaWebWidgets.js"></script>-->
 </svelte:head>
 
-<svelte:window on:load={startApp}></svelte:window>
 <script lang="ts">
   export let videos
+  import { currentVideoID } from "./stores.js"
+  import { onMount } from "svelte"
+  import ThetaWebWidgets from "../theta/thetaWebWidget"
+  import loadjs from "loadjs"
 
-  import "../theta/theta";
-  import "../theta/theta-hls-plugin"
-  import "../theta/theta-videojs-plugin.js"
-  
-  import { currentVideoID } from './stores';
-  import "../theta/thetaWebWidget";
+        // define a dependency bundle and execute code when it loads
+  loadjs([
+    "/static/theta/hls.js",
+    "/static/theta/theta.umd.js",
+    "/static/theta/theta-hls-plugin.umd.js",
+    "/static/theta/videojs-theta-plugin.min.js",
+  ], 'foobar', {
+    async: false
+  });
 
+  loadjs.ready('foobar', function() {
+    startApp()
+  });
 
   //console.log({ url });
   ///////////////////
@@ -43,7 +38,8 @@
   //videoID = videoID.replace(/\/master.m3u8/, "")
   //console.log(videoID)
 
-  videoID = $currentVideoID
+  videoID = $currentVideoID;
+  console.log(videoID)
   url = "https://media.thetavideoapi.com/" + $currentVideoID + "/master.m3u8"
   
   videoData = JSON.parse(videos)
@@ -130,16 +126,13 @@
 
     let hlsOpts = (theta ? { fLoader: ClosuredThetaLoader } : {});
     let videoURL = url;
+
     //console.log("tryna start the vid")
+    
     if (Hls.isSupported()) {
         console.log("hls is supported")
         let hls = new Hls(hlsOpts);
-        /*
-        player.getProvider().then(function(result){
-          var provider = result
-          console.log(provider)
-        })
-        */
+
         hls.attachMedia(player);
         
         //player.innerHTML = "<source data-src={url} type=\"application/x-mpegURL\" data-vs={url} />";
@@ -247,17 +240,20 @@
   }
   /*
   onMount(async () => {
-    startVideo(theta)
-    function startVideo(theta) {
-      class ClosuredThetaLoader extends Theta.HlsJsFragmentLoader {
-          load(...args) {
-            // Inject context from closure.
-            this.thetaCtx = theta;
-            super.load(...args);
-          }
-      }
-    }
-  })
+    // NOTE: parentheses turn destructuring assignments into expressions
+
+      // define a dependency bundle and execute code when it loads
+    loadjs([
+      "/static/theta/hls.js",
+      "/static/theta/theta.umd.js",
+      "/static/theta/theta-hls-plugin.umd.js",
+      "/static/theta/videojs-theta-plugin.min.js"
+    ], 'foobar');
+
+    loadjs.ready('foobar', function() {
+      startApp()
+    });
+  });
   */
 </script>
 <my-header></my-header>
@@ -266,15 +262,45 @@
 
   
 
-  <!--<vm-player class="video-js vjs-custom-skin vjs-big-play-centered vjs-16-9" controls>
-    
-    <vm-video bind:this={player}>
 
-    </vm-video>
-    <vm-hls poster="/media/poster.png" bind:this={hlsPlayer} version="0.12.4">
-      <source bind:this={videoSrc} type="application/x-mpegURL" />
-    </vm-hls>
-  </vm-player>-->
+<!--
+<div class="md:flex md:flex-col lg:grid lg:grid-cols-6 lg:auto-cols-auto justify-evenly">
+  <div class="flex flex-col col-span-5">
+    <div class="p-4">
+      <vm-player class="video-js vjs-custom-skin vjs-big-play-centered vjs-16-9" controls>
+    
+        <vm-video bind:this={player}>
+    
+        </vm-video>
+        <vm-hls poster="/media/poster.png" bind:this={hlsPlayer} version="0.12.4">
+          <source bind:this={videoSrc} type="application/x-mpegURL" />
+        </vm-hls>
+      </vm-player>
+    </div>
+    <section id="content" class="p-4">
+  
+      <div bind:this={thetaWidgetPlaceholder} id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
+    </section>
+  </div>
+  <div class="px-5 mx-auto col-span-1">
+    <div class="grid-col-1">
+    {#each videoData as video, i}
+        
+        <div class="h-auto w-auto p-4">
+            
+            <div class="mt-4">
+                <a bind:this={thumbnailElement} class="block relative h-48 rounded overflow-hidden" href="/playVideo/{video.Video["id"]}" on:click={ () => currentVideoID.set(video.Video["id"])}>
+                    <img alt="ecommerce" class="object-cover object-center w-full h-full block" src="data:image/jpg;base64,{video["thumbnail"]}">
+                </a>
+                <h2 class="text-primary-content title-font tracking-widest mb-1 break-words"><a bind:this={titleElement} on:click={() => currentVideoID.set(video.Video["id"])} href="/playVideo/{video.Video["id"]}">{video["videoName"]}</a></h2>
+                <h3 class="prose-base-content text-sm tracking-widest"><a href="_blank">{video["username"]}</a></h3>
+                <p class="mt-1">{i}</p>
+            </div>
+        </div>
+    {/each}
+    </div>
+</div>
+-->
 <div class="md:flex md:flex-col lg:grid lg:grid-cols-6 lg:auto-cols-auto justify-evenly">
   <div class="flex flex-col col-span-5">
     <div class="p-4">
@@ -285,15 +311,10 @@
       </div>
     </div>
     <section id="content" class="p-4">
-      <!-- Optional - For Theta Web Widget -->
-  
       <div bind:this={thetaWidgetPlaceholder} id="SAMPLE_THETA_WEB_WIDGET_PLACEHOLDER"></div>
-  
-      <!--<iframe title="thetaWidget" src="https://theta-web-widgets.thetatoken.org/widgets/overview-with-traffic-chart?theme=light&widget-id=p72j6mf30&show-tfuel-help-button=false&main-message=%20&language=en&show-gamma-help-button=false" style="width: 100%; height: 268px;" scrolling="no" frameborder="0"></iframe>-->
     </section>
   </div>
   <div class="px-5 mx-auto col-span-1">
-    <!-- svelte-ignore empty-block -->
     <div class="grid-col-1">
     {#each videoData as video, i}
         

@@ -10,6 +10,7 @@ import typescript from '@rollup/plugin-typescript';
 import json from "@rollup/plugin-json";
 import legacy from "@rollup/plugin-legacy";
 import postcss from 'rollup-plugin-postcss';
+import "@vime/svelte";
 
 
 //import sveltePreprocess from "svelte-preprocess";
@@ -27,10 +28,11 @@ const production = !process.env.ROLLUP_WATCH;
 export default {
 	input: 'src/index.ts',
 	output: {
+		//dir: "public/build/",
 		sourcemap: true,
-		format: 'umd',
+		format: 'iife',
 		name: 'app',
-		file: 'public/build/bundle.js',
+		file: 'public/build/bundle.js'
 	},
 	plugins: [
 		//rollupImportMapPlugin('src/import-map.json'),
@@ -50,7 +52,7 @@ export default {
 		}),
 		//css({ output: 'public/build/bundle.css' }),
 		legacy({
-			"src/thetaWebWidget.js": "ThetaWebWidgets"
+			"src/theta/thetaWebWidget.js": "ThetaWebWidgets"
 		}),
 		typescript({ sourceMap: !production }),
 
@@ -69,7 +71,7 @@ export default {
 		}),
 		
 		commonjs({
-			include: [".cjs", ".js"]
+			include: [".cjs", ".js", "node_modules/**/*"]
 		}),
 		
 		// In dev mode, call `npm run start` once

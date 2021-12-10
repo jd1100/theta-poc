@@ -8,6 +8,9 @@
     
 
     console.log("header", $user)
+    if ($user == "null") {
+      user.set("")
+    }
     function logout() {
       user.set('')
       console.log($user)
@@ -23,9 +26,42 @@
 </script>  
 
 <main>
+  <!--
+  <div class="w-full flex flex-col sm:flex-row flex-grow overflow-hidden">
+    <div class="sm:w-1/3 md:1/4 w-full flex-shrink flex-grow-0 p-4">
+        <div class="sticky top-0 p-4 w-full">
+            <ul class="flex sm:flex-col overflow-hidden content-center justify-between">
+                 nav goes here
+            </ul>
+        </div>
+    </div>
+    <main role="main" class="w-full h-full flex-grow p-3 overflow-auto">
+         content area
+    </main>
+</div>
+-->
+
+    <!--sidebar
+    <div class=" flex-none rounded-lg shadow drawer h-auto">
+      <input id="my-drawer" type="checkbox" class="drawer-toggle"> 
+      <div class="flex flex-col items-center justify-center drawer-content">
+        <label for="my-drawer" class="btn btn-primary drawer-button">open menu</label>
+      </div> 
+      <div class="drawer-side">
+        <label for="my-drawer" class="drawer-overlay"></label> 
+        <ul class="menu p-4 overflow-y-auto w-80 bg-base-100 text-base-content">
+          <li>
+            <a>Menu Item</a>
+          </li> 
+          <li>
+            <a>Menu Item</a>
+          </li>
+        </ul>
+      </div>
+    </div>-->
     <div class="navbar p-2 w-auto shadow-lg bg-neutral text-neutral-content rounded-box">
         <div class="flex-none hidden lg:flex">
-          <button class="btn btn-square btn-ghost">
+          <button for="my-drawer" class="btn btn-square btn-ghost drawer-content drawer-button">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">           
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>               
             </svg>
@@ -49,7 +85,22 @@
             </svg>
           </button>
         </div>
-        {#if $user}
+        {#if $user == "" || $user == "null"}
+        <div class="flex-none">
+          <a href="/login">
+            <button class="btn btn-ghost text-lg font-bold">
+                login
+            </button>
+          </a>
+        </div>
+        <div class="flex-none">
+          <a href="/register">
+            <button class="btn btn-ghost text-lg font-bold">
+                register
+            </button>
+          </a>
+        </div>
+        {:else}
         <div class="flex-none">
           <a href="/upload">
             <button class="btn btn-ghost text-lg font-bold">
@@ -77,21 +128,6 @@
               <a href="_blank"><img alt="no pic found" src="/static/user_profile.png"></a>
             </div>
           </div>
-        </div>
-        {:else}
-        <div class="flex-none">
-          <a href="/login">
-            <button class="btn btn-ghost text-lg font-bold">
-                login
-            </button>
-          </a>
-        </div>
-        <div class="flex-none">
-          <a href="/register">
-            <button class="btn btn-ghost text-lg font-bold">
-                register
-            </button>
-          </a>
         </div>
         {/if}
       </div>

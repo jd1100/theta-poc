@@ -4,8 +4,9 @@
     //import { onMount } from 'svelte';
 
     export let newUploadedVideo;
-    var videoUpload;
 
+    var progressBarInnerHTML = 0
+    var progressData = 0
     var fileLength
     var videoID = ""
     var timeoutID
@@ -108,13 +109,13 @@
             }
 
             //var progressBarDiv = document.getElementById("progressBarDiv")
-            //var progressBar = document.getElementById("progressBar")
+            var progressBar = document.getElementById("progressBar")
 
             if (data == 100) {
                 console.log(data)
-                progressBar.innerHTML = data
-                progressBar.style.width = data + "%"
-
+                progressBarInnerHTML = data
+                progressData = data
+                //progressBarWidth = data
                 //remove progress bar
                 progressBarActive = false
                 //add button back
@@ -126,8 +127,10 @@
                 window.location = "/videos"
                 return
             } else {
-                progressBar.innerHTML = data
-                progressBar.style.width = data + "%"
+                progressBarInnerHTML = data
+                //progressBarWidth = data
+                progressData = data
+                
                 timeoutID = setTimeout(getUploadStatus, 1000)
 
             }
@@ -243,7 +246,7 @@
             {/if}
             {#if progressBarActive}
                 <div bind:this={progressBarDiv} class="w-full bg-gray-200 rounded-full">
-                    <div bind:this={progressBar} class="bg-primary text-xs font-medium bg-primary-focused text-center p-0.5 leading-none rounded-full"></div>
+                    <div bind:this={progressBar} style="width: {progressData}%" class="bg-primary text-xs font-medium bg-primary-focused text-center p-0.5 leading-none rounded-full">{progressBarInnerHTML}</div>
                 </div>
             {/if}
             {#if buttonActive}
